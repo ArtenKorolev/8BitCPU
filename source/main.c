@@ -31,9 +31,20 @@ int main(const int argc, const char **argv) {
   memory.memory[9] = ADDI_OPCOD;
   memory.memory[10] = 255;
 
-  for (int i = 0; i < 10; ++i) {
+  memory.memory[11] = JMP_OPCOD;
+
+  // address: 1 (making loop)
+  memory.memory[12] = 0;
+  memory.memory[13] = 1;
+
+  while (cpu.ip < 15) {
     cpu_do_cycle(&cpu, &memory);
+
+    for (int i = 0; i < 1000000000; ++i) {
+    }
   }
+
+  memory_free(&memory);
 
   return 0;
 }
