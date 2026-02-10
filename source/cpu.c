@@ -19,7 +19,7 @@ void cpu_init(cpu_t *self) {
 void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
                                        char register_name, memory_t *memory);
 
-void cup_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
+void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
@@ -49,7 +49,7 @@ void cpu_do_cycle(cpu_t *self, memory_t *memory) {
       cpu_move_to_register_intermediate(self, &self->regZ, 'Z', memory);
       break;
     case ADDI_OPCOD:
-      cup_add_intermediate_to_register_A(self, memory);
+      cpu_add_intermediate_to_register_A(self, memory);
       break;
     default:
       puts("Unknown opcode;");
@@ -78,7 +78,7 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
 
-void cup_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
+void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   bool success = false;
 
   printf("Add to register A an intermediate\n");
