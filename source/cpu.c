@@ -20,10 +20,11 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
                                        char register_name, memory_t *memory);
 
 void cup_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
+byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
-  const byte_t byte = memory_read(memory, self->ip++, &success);  // cpu fetch
+  const byte_t byte = cpu_fetch(self, memory, &success);
 
   if (!success) {
     return;
@@ -68,7 +69,7 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
   printf("Move to register %c an intermediate;\n", register_name);
   printf("Register %c now: %d\n", register_name, *register_ptr);
 
-  const byte_t intermediate = memory_read(memory, self->ip++, &success);
+  const byte_t intermediate = cpu_fetch(self, memory, &success);
 
   if (success) {
     *register_ptr = intermediate;
@@ -82,7 +83,7 @@ void cup_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
 
   printf("Add to register A an intermediate\n");
 
-  const byte_t intermediate = memory_read(memory, self->ip++, &success);
+  const byte_t intermediate = cpu_fetch(self, memory, &success);
 
   printf("Register A now: %d\n", self->regA);
 
@@ -95,4 +96,8 @@ void cup_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   }
 
   printf("Register A after: %d\n", self->regA);
+}
+
+byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
+  return memory_read(memory, self->ip++, success);
 }
