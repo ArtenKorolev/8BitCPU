@@ -1,0 +1,7 @@
+[Bb]in/
+[Bb]uild/
+[Oo]ut/
+.idea/
+.vscode/
+.cache/
+*.dSYM/
