@@ -21,6 +21,7 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
 
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
+void cpu_exec(cpu_t *self, memory_t *memory);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
