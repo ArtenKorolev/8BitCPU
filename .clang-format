@@ -1,2 +1,6 @@
 BasedOnStyle: Google
-
+IndentWidth: 2
+IndentPPDirectives: BeforeHash
+ColumnLimit: 80
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None

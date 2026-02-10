@@ -19,9 +19,10 @@ void cpu_init(cpu_t *self) {
 void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
                                        char register_name, memory_t *memory);
 
+// private cpu functions
+void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte);
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
-void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte);
 void cpu_jump(cpu_t *self, memory_t *memory);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
@@ -131,7 +132,9 @@ void cpu_jump(cpu_t *self, memory_t *memory) {
   printf("IP after: %d\n", self->ip);
 }
 
-bool check_8bit_overflow(byte_t a, byte_t b) { return a + b > BYTE_MAX; }
+bool check_8bit_overflow(byte_t a, byte_t b) {
+  return a + b > BYTE_MAX;
+}
 
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   bool success = false;
