@@ -11,4 +11,5 @@ typedef struct {
 } memory_t;
 
 void memory_init(memory_t *self);
+void memory_free(memory_t *self);
 byte_t memory_read(memory_t *self, word_t index, bool *success);

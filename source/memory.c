@@ -27,3 +27,11 @@ byte_t memory_read(memory_t *self, const word_t address, bool *success) {
 
   return self->memory[address];
 }
+
+void memory_free(memory_t *self) {
+  if (self->memory == NULL || self->memory_size == 0) {
+    return;
+  }
+
+  free(self->memory);
+}
