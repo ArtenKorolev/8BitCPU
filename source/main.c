@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
+#include "base.h"
 #include "cpu.h"
+#include "file_io.h"
 #include "memory.h"
 
 int main(const int argc, const char **argv) {
@@ -11,37 +14,22 @@ int main(const int argc, const char **argv) {
   memory_t memory;
   memory_init(&memory);
 
-  if (memory.memory_size == 0) {
-    puts("Bad alloc");
-    return 1;
+  file_content_t file_content = read_bin_file("mem.bin");
+
+  if (file_content.size == 0) {
+    puts("Zero bytes read");
   }
 
-  memory.memory[1] = MOVAI_OPCOD;
-  memory.memory[2] = 222;
+  if (file_content.size > MEMORY_SIZE) {
+    memcpy(memory.memory, file_content.data, MEMORY_SIZE);
+  } else {
+    memcpy(memory.memory, file_content.data, file_content.size);
+  }
 
-  memory.memory[3] = MOVXI_OPCOD;
-  memory.memory[4] = 221;
+  file_content_free(&file_content);
 
-  memory.memory[5] = MOVYI_OPCOD;
-  memory.memory[6] = 232;
-
-  memory.memory[7] = MOVZI_OPCOD;
-  memory.memory[8] = 22;
-
-  memory.memory[9] = ADDI_OPCOD;
-  memory.memory[10] = 255;
-
-  memory.memory[11] = JMP_OPCOD;
-
-  // address: 1 (making loop)
-  memory.memory[12] = 0;
-  memory.memory[13] = 1;
-
-  while (cpu.ip < 15) {
+  while (cpu.ip < 10) {
     cpu_do_cycle(&cpu, &memory);
-
-    for (int i = 0; i < 1000000000; ++i) {
-    }
   }
 
   memory_free(&memory);
