@@ -63,6 +63,7 @@ void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte) {
       break;
     default:
       puts("Unknown opcode;");
+      break;
   }
 }
 
@@ -97,7 +98,7 @@ bool validate_address(word_t address) {
 }
 
 void cpu_jump(cpu_t *self, memory_t *memory) {
-  puts("Jump to an adress;");
+  puts("Jump to an address;");
   bool success = false;
   printf("IP now: %d\n", self->ip);
 

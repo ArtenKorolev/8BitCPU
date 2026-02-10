@@ -11,7 +11,7 @@ typedef enum {
   MOVZI_OPCOD = 41,  // move to register Z an intermediate value
   ADDI_OPCOD = 1,    // add an intermediate to A register
   ADDR_OPCOD = 2,    // add a register's value to A register
-  JMP_OPCOD = 3,     // jumps to an adress
+  JMP_OPCOD = 3,     // jump to an address
 } opcode_e;
 
 typedef struct {
