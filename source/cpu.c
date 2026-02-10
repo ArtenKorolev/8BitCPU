@@ -21,7 +21,7 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
 
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
-void cpu_exec(cpu_t *self, memory_t *memory);
+void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
@@ -31,9 +31,13 @@ void cpu_do_cycle(cpu_t *self, memory_t *memory) {
     return;
   }
 
+  cpu_exec(self, memory, byte);
+}
+
+void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte) {
   printf("Opcode description: ");
 
-  switch (byte) {
+  switch (fetched_byte) {
     case NOOP_OPCOD:
       puts("No operation;");
       break;
@@ -79,6 +83,8 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
 
+inline bool check_8bit_overflow(byte_t a, byte_t b) { return a + b > BYTE_MAX; }
+
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   bool success = false;
 
@@ -89,7 +95,7 @@ void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   printf("Register A now: %d\n", self->regA);
 
   if (success) {
-    if (self->regA + intermediate > BYTE_MAX) {
+    if (check_8bit_overflow(self->regA, intermediate)) {
       puts("Error: Overflow in addition");
     } else {
       self->regA += intermediate;
