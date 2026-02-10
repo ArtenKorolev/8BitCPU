@@ -22,6 +22,7 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte);
+void cpu_jump(cpu_t *self, memory_t *memory);
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
@@ -56,6 +57,9 @@ void cpu_exec(cpu_t *self, memory_t *memory, byte_t fetched_byte) {
     case ADDI_OPCOD:
       cpu_add_intermediate_to_register_A(self, memory);
       break;
+    case JMP_OPCOD:
+      cpu_jump(self, memory);
+      break;
     default:
       puts("Unknown opcode;");
   }
@@ -83,7 +87,51 @@ void cpu_move_to_register_intermediate(cpu_t *self, byte_t *register_ptr,
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
 
-inline bool check_8bit_overflow(byte_t a, byte_t b) { return a + b > BYTE_MAX; }
+bool validate_address(word_t address) {
+  if (address < 0 || address > WORD_MAX) {
+    return false;
+  }
+
+  return true;
+}
+
+void cpu_jump(cpu_t *self, memory_t *memory) {
+  puts("Jump to an adress;");
+  bool success = false;
+  printf("IP now: %d\n", self->ip);
+
+  byte_t first_byte = cpu_fetch(self, memory, &success);
+
+  if (!success) {
+    puts("Error: Error while reading high part of address");
+    return;
+  }
+
+  word_t address = first_byte;
+  address <<= 8;
+
+  byte_t second_byte = cpu_fetch(self, memory, &success);
+
+  if (!success) {
+    puts("Error: Error while reading low part of address");
+    return;
+  }
+
+  address += second_byte;
+
+  printf("Address for jumping: %d\n", address);
+
+  if (!validate_address(address)) {
+    puts("Error: Error in validating address");
+    return;
+  }
+
+  self->ip = address;
+
+  printf("IP after: %d\n", self->ip);
+}
+
+bool check_8bit_overflow(byte_t a, byte_t b) { return a + b > BYTE_MAX; }
 
 void cpu_add_intermediate_to_register_A(cpu_t *self, memory_t *memory) {
   bool success = false;
