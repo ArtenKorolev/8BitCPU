@@ -5,11 +5,11 @@
 
 typedef enum {
   NOOP_OPCOD = 0,
-  MOVAI_OPCOD = 11,  // move to register A an intermediate value
-  MOVXI_OPCOD = 21,  // move to register X an intermediate value
-  MOVYI_OPCOD = 31,  // move to register Y an intermediate value
-  MOVZI_OPCOD = 41,  // move to register Z an intermediate value
-  ADDI_OPCOD = 1,    // add an intermediate to A register
+  MOVAI_OPCOD = 11,  // move to register A an immediate value
+  MOVXI_OPCOD = 21,  // move to register X an immediate value
+  MOVYI_OPCOD = 31,  // move to register Y an immediate value
+  MOVZI_OPCOD = 41,  // move to register Z an immediate value
+  ADDI_OPCOD = 1,    // add an immediate to A register
   ADDR_OPCOD = 2,    // add a register's value to A register
   JMP_OPCOD = 3,     // jump to an address
 } opcode_e;
