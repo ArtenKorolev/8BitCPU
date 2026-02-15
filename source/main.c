@@ -9,7 +9,6 @@
 int main(const int argc, const char **argv) {
   cpu_t cpu;
   cpu_init(&cpu);
-  cpu.ip = 0;
 
   memory_t memory;
   memory_init(&memory);
@@ -28,7 +27,7 @@ int main(const int argc, const char **argv) {
 
   file_content_free(&file_content);
 
-  while (cpu.ip < 10) {
+  for (int i = 0; i < 30; ++i) {
     cpu_do_cycle(&cpu, &memory);
   }
 

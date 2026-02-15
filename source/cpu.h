@@ -8,16 +8,27 @@ typedef enum {
   MOVAI_OPCOD = 11,  // move to register A an immediate value
   MOVXI_OPCOD = 21,  // move to register X an immediate value
   MOVYI_OPCOD = 31,  // move to register Y an immediate value
-  MOVZI_OPCOD = 41,  // move to register Z an immediate value
   ADDI_OPCOD = 1,    // add an immediate to A register
-  ADDR_OPCOD = 2,    // add a register's value to A register
   JMP_OPCOD = 3,     // jump to an address
 } opcode_e;
 
-typedef struct {
-  byte_t regA, regX, regY, regZ;
+typedef enum {
+  FETCH,
+  FETCH_OPERAND,
+  DECODE,
+  EXECUTE,
+  WRITEBACK,
+} cpu_state_e;
 
-  word_t ip, sp;
+typedef struct {
+  byte_t reg_A, reg_X, reg_Y;
+
+  word_t reg_IP, reg_SP;
+  byte_t remaining_bytes;
+  byte_t operands_buffer[16];
+  byte_t operands_buffer_index;
+  cpu_state_e state;
+  opcode_e reg_IR;
 } cpu_t;
 
 void cpu_init(cpu_t *self);
