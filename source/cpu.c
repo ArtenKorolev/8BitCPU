@@ -227,6 +227,7 @@ void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char
 
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
+
 void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value) {
   if (new_reg_value == 0) {
     cpu_status_flag_set(self, ZERO_MASK);
@@ -234,8 +235,7 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
     cpu_status_flag_clear(self, ZERO_MASK);
   }
 
-#define IS_NEGATIVE 0b10000000
-  if ((new_reg_value & IS_NEGATIVE) != 0) {
+  if ((new_reg_value & NEGATIVE_MASK) != 0) {
     cpu_status_flag_set(self, NEGATIVE_MASK);
   } else {
     cpu_status_flag_clear(self, NEGATIVE_MASK);
@@ -268,10 +268,6 @@ void cpu_jump(cpu_t *self) {
   printf("IP after: %d\n", self->reg_IP);
 }
 
-bool check_8bit_overflow(const byte_t a, const byte_t b) {
-  return a + b > BYTE_MAX;
-}
-
 void cpu_add_immediate_to_register_A(cpu_t *self) {
   printf("Add to register A an immediate\n");
 
@@ -280,11 +276,17 @@ void cpu_add_immediate_to_register_A(cpu_t *self) {
 
   printf("Register A now: %d\n", self->reg_A);
 
-  if (check_8bit_overflow(self->reg_A, immediate + cpu_status_flag_is_set(self, CARRY_MASK))) {
-    puts("Error: Overflow in addition");
+  const byte_t carry = cpu_status_flag_is_set(self, CARRY_MASK) ? 1 : 0;
+  const word_t result = (word_t)self->operands_buffer[0] + (word_t)carry + (word_t) + self->reg_A;
+
+  if (result > 0xFF) {
+    cpu_status_flag_set(self, CARRY_MASK);
   } else {
-    self->reg_A += immediate + cpu_status_flag_is_set(self, CARRY_MASK);
+    cpu_status_flag_clear(self, CARRY_MASK);
   }
+
+  self->reg_A = (byte_t)result;
+  cpu_update_flags_when_loading_register(self, self->reg_A);
 
   printf("Register A after: %d\n", self->reg_A);
 }
