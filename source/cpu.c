@@ -25,6 +25,7 @@ void cpu_load_to_register_immediate(cpu_t *self, byte_t *register_ptr, char regi
 void cpu_load_to_register_zero_page(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_load_to_register_zero_page_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
+void cpu_load_to_register_abs_addr_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_add_immediate_to_register_A(cpu_t *self);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
@@ -112,6 +113,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
       break;
     case JMP_OPCOD:
     case LDAA_OPCOD:
+    case LDAAX_OPCOD:
       bytes = 2;
       break;
     case NOOP_OPCOD:
@@ -222,6 +224,25 @@ void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char
   bool success;
 
   *register_ptr = memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]), &success);
+
+  cpu_update_flags_when_loading_register(self, *register_ptr);
+
+  printf("Register %c after: %d\n", register_name, *register_ptr);
+}
+
+void cpu_load_to_register_abs_addr_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory) {
+  if (register_ptr == NULL) {
+    puts("register_ptr is NULL for some reason");
+    return;
+  }
+
+  printf("Move to register %c a value from absolute address + X;\n", register_name);
+  printf("Register %c now: %d\n", register_name, *register_ptr);
+
+  bool success;
+
+  *register_ptr = memory_read(
+      memory, (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFF, &success);
 
   cpu_update_flags_when_loading_register(self, *register_ptr);
 
