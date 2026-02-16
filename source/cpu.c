@@ -20,31 +20,41 @@ void cpu_init(cpu_t *self) {
 }
 
 // private cpu functions
-void cpu_exec(cpu_t *self);
+void cpu_exec(cpu_t *self, memory_t *memory);
 void cpu_load_to_register_immediate(cpu_t *self, byte_t *register_ptr, char register_name);
+void cpu_load_to_register_zero_page(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
+void cpu_load_to_register_zero_page_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
+void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_add_immediate_to_register_A(cpu_t *self);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
+void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value);
+
+#define MAKE_WORD(a, b) ((a << 8) | (b))
 
 #define CARRY_MASK 0x1
+#define ZERO_MASK 0x2
+#define INTERRUPT_MAKS 0x4
+#define DECIMAL_MAKS 0x8
+#define BREAK_MASK 0x10
+#define OVERFLOW_MASK 0x40
+#define NEGATIVE_MASK 0x80
 
 // status register utils
-bool cpu_status_register_enabled_on_mask(const cpu_t *self, const byte_t mask) {
+bool cpu_status_flag_is_set(const cpu_t *self, const byte_t mask) {
   return self->reg_P & mask;
 }
 
-void cpu_set_status_register_on_mask(cpu_t *self, const byte_t mask) {
+void cpu_status_flag_set(cpu_t *self, const byte_t mask) {
   self->reg_P |= mask;
 }
 
-void cpu_unset_status_register_on_mask(cpu_t *self, const byte_t mask) {
+void cpu_status_flag_clear(cpu_t *self, const byte_t mask) {
   self->reg_P &= ~mask;
 }
-
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
-
   switch (self->state) {
     case FETCH:
       self->reg_IR = cpu_fetch(self, memory, &success);
@@ -77,7 +87,7 @@ void cpu_do_cycle(cpu_t *self, memory_t *memory) {
       self->state = EXECUTE;
       return;
     case EXECUTE:
-      cpu_exec(self);
+      cpu_exec(self, memory);
       self->state = WRITEBACK;
       return;
     case WRITEBACK:
@@ -96,9 +106,12 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case LDXI_OPCOD:
     case LDYI_OPCOD:
     case ADDI_OPCOD:
+    case LDAZ_OPCOD:
+    case LDAZX_OPCOD:
       bytes = 1;
       break;
     case JMP_OPCOD:
+    case LDAA_OPCOD:
       bytes = 2;
       break;
     case NOOP_OPCOD:
@@ -108,7 +121,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   self->remaining_bytes = bytes;
 }
 
-void cpu_exec(cpu_t *self) {
+void cpu_exec(cpu_t *self, memory_t *memory) {
   printf("Opcode description: ");
 
   switch (self->reg_IR) {
@@ -117,6 +130,15 @@ void cpu_exec(cpu_t *self) {
       break;
     case LDAI_OPCOD:
       cpu_load_to_register_immediate(self, &self->reg_A, 'A');
+      break;
+    case LDAZ_OPCOD:
+      cpu_load_to_register_zero_page(self, &self->reg_A, 'A', memory);
+      break;
+    case LDAA_OPCOD:
+      cpu_load_to_register_abs_addr(self, &self->reg_A, 'A', memory);
+      break;
+    case LDAZX_OPCOD:
+      cpu_load_to_register_zero_page_x(self, &self->reg_A, 'A', memory);
       break;
     case LDXI_OPCOD:
       cpu_load_to_register_immediate(self, &self->reg_X, 'X');
@@ -147,18 +169,86 @@ void cpu_load_to_register_immediate(cpu_t *self, byte_t *register_ptr, const cha
 
   *register_ptr = self->operands_buffer[0];
 
+  cpu_update_flags_when_loading_register(self, *register_ptr);
+
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
 
-bool validate_address(word_t address) {
+void cpu_load_to_register_zero_page(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory) {
+  if (register_ptr == NULL) {
+    puts("register_ptr is NULL for some reason");
+    return;
+  }
+
+  printf("Move to register %c a value from zero page;\n", register_name);
+  printf("Register %c now: %d\n", register_name, *register_ptr);
+
+  bool success;
+
+  *register_ptr = memory_read(memory, self->operands_buffer[0], &success);
+
+  cpu_update_flags_when_loading_register(self, *register_ptr);
+
+  printf("Register %c after: %d\n", register_name, *register_ptr);
+}
+
+void cpu_load_to_register_zero_page_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory) {
+  if (register_ptr == NULL) {
+    puts("register_ptr is NULL for some reason");
+    return;
+  }
+
+  printf("Move to register %c a value from zero page + X;\n", register_name);
+  printf("Register %c now: %d\n", register_name, *register_ptr);
+
+  bool success;
+
+  *register_ptr = memory_read(memory, (self->operands_buffer[0] + self->reg_X) & 0xFF, &success);
+
+  cpu_update_flags_when_loading_register(self, *register_ptr);
+
+  printf("Register %c after: %d\n", register_name, *register_ptr);
+}
+
+void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory) {
+  if (register_ptr == NULL) {
+    puts("register_ptr is NULL for some reason");
+    return;
+  }
+
+  printf("Move to register %c a value from absolute address;\n", register_name);
+  printf("Register %c now: %d\n", register_name, *register_ptr);
+
+  bool success;
+
+  *register_ptr = memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]), &success);
+
+  cpu_update_flags_when_loading_register(self, *register_ptr);
+
+  printf("Register %c after: %d\n", register_name, *register_ptr);
+}
+void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value) {
+  if (new_reg_value == 0) {
+    cpu_status_flag_set(self, ZERO_MASK);
+  } else {
+    cpu_status_flag_clear(self, ZERO_MASK);
+  }
+
+#define IS_NEGATIVE 0b10000000
+  if ((new_reg_value & IS_NEGATIVE) != 0) {
+    cpu_status_flag_set(self, NEGATIVE_MASK);
+  } else {
+    cpu_status_flag_clear(self, NEGATIVE_MASK);
+  }
+}
+
+bool validate_address(const word_t address) {
   if (address < 0 || address > WORD_MAX) {
     return false;
   }
 
   return true;
 }
-
-#define MAKE_WORD(a, b) ((a << 8) | (b))
 
 void cpu_jump(cpu_t *self) {
   puts("Jump to an address;");
@@ -178,7 +268,7 @@ void cpu_jump(cpu_t *self) {
   printf("IP after: %d\n", self->reg_IP);
 }
 
-bool check_8bit_overflow(byte_t a, byte_t b) {
+bool check_8bit_overflow(const byte_t a, const byte_t b) {
   return a + b > BYTE_MAX;
 }
 
@@ -190,10 +280,10 @@ void cpu_add_immediate_to_register_A(cpu_t *self) {
 
   printf("Register A now: %d\n", self->reg_A);
 
-  if (check_8bit_overflow(self->reg_A, immediate + cpu_status_register_enabled_on_mask(self, CARRY_MASK))) {
+  if (check_8bit_overflow(self->reg_A, immediate + cpu_status_flag_is_set(self, CARRY_MASK))) {
     puts("Error: Overflow in addition");
   } else {
-    self->reg_A += immediate + cpu_status_register_enabled_on_mask(self, CARRY_MASK);
+    self->reg_A += immediate + cpu_status_flag_is_set(self, CARRY_MASK);
   }
 
   printf("Register A after: %d\n", self->reg_A);
