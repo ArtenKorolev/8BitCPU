@@ -111,7 +111,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case LDAZX_OPCOD:
       bytes = 1;
       break;
-    case JMP_OPCOD:
+    case JMPA_OPCOD:
     case LDAA_OPCOD:
     case LDAAX_OPCOD:
       bytes = 2;
@@ -151,7 +151,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case ADDI_OPCOD:
       cpu_add_immediate_to_register_A(self);
       break;
-    case JMP_OPCOD:
+    case JMPA_OPCOD:
       cpu_jump(self);
       break;
     default:

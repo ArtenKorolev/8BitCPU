@@ -13,7 +13,7 @@ typedef enum {
   LDXI_OPCOD = 0xA2,   // move to register X an immediate value
   LDYI_OPCOD = 0xA0,   // move to register Y an immediate value
   ADDI_OPCOD = 0x69,   // add an immediate to A register
-  JMP_OPCOD = 3,       // jump to an address
+  JMPA_OPCOD = 0x4C,   // jump to an address
 } opcode_e;
 
 typedef enum {
