@@ -7,10 +7,11 @@
 
 #include "memory.h"
 
+#define STACK_LOWEST_ADDRESS 0x0100
+
 void cpu_init(cpu_t *self) {
   self->reg_IP = 0;
-  self->reg_SP = 0;
-
+  self->reg_SP = 0xFF;
   self->reg_A = self->reg_X = self->reg_Y = 0;
 
   memset(self->operands_buffer, 0, 16);
@@ -19,12 +20,27 @@ void cpu_init(cpu_t *self) {
 }
 
 // private cpu functions
-void cpu_exec(cpu_t *self, memory_t *memory);
-void cpu_move_to_register_immediate(cpu_t *self, byte_t *register_ptr, char register_name);
+void cpu_exec(cpu_t *self);
+void cpu_load_to_register_immediate(cpu_t *self, byte_t *register_ptr, char register_name);
 void cpu_add_immediate_to_register_A(cpu_t *self);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
-void cpu_jump(cpu_t *self, memory_t *memory);
+void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
+
+#define CARRY_MASK 0x1
+
+// status register utils
+bool cpu_status_register_enabled_on_mask(const cpu_t *self, const byte_t mask) {
+  return self->reg_P & mask;
+}
+
+void cpu_set_status_register_on_mask(cpu_t *self, const byte_t mask) {
+  self->reg_P |= mask;
+}
+
+void cpu_unset_status_register_on_mask(cpu_t *self, const byte_t mask) {
+  self->reg_P &= ~mask;
+}
 
 void cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
@@ -61,7 +77,7 @@ void cpu_do_cycle(cpu_t *self, memory_t *memory) {
       self->state = EXECUTE;
       return;
     case EXECUTE:
-      cpu_exec(self, memory);
+      cpu_exec(self);
       self->state = WRITEBACK;
       return;
     case WRITEBACK:
@@ -76,9 +92,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   byte_t bytes = 0;
 
   switch (self->reg_IR) {
-    case MOVAI_OPCOD:
-    case MOVXI_OPCOD:
-    case MOVYI_OPCOD:
+    case LDAI_OPCOD:
+    case LDXI_OPCOD:
+    case LDYI_OPCOD:
     case ADDI_OPCOD:
       bytes = 1;
       break;
@@ -92,27 +108,27 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   self->remaining_bytes = bytes;
 }
 
-void cpu_exec(cpu_t *self, memory_t *memory) {
+void cpu_exec(cpu_t *self) {
   printf("Opcode description: ");
 
   switch (self->reg_IR) {
     case NOOP_OPCOD:
       puts("No operation;");
       break;
-    case MOVAI_OPCOD:
-      cpu_move_to_register_immediate(self, &self->reg_A, 'A');
+    case LDAI_OPCOD:
+      cpu_load_to_register_immediate(self, &self->reg_A, 'A');
       break;
-    case MOVXI_OPCOD:
-      cpu_move_to_register_immediate(self, &self->reg_X, 'X');
+    case LDXI_OPCOD:
+      cpu_load_to_register_immediate(self, &self->reg_X, 'X');
       break;
-    case MOVYI_OPCOD:
-      cpu_move_to_register_immediate(self, &self->reg_Y, 'Y');
+    case LDYI_OPCOD:
+      cpu_load_to_register_immediate(self, &self->reg_Y, 'Y');
       break;
     case ADDI_OPCOD:
       cpu_add_immediate_to_register_A(self);
       break;
     case JMP_OPCOD:
-      cpu_jump(self, memory);
+      cpu_jump(self);
       break;
     default:
       puts("Unknown opcode;");
@@ -120,7 +136,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   }
 }
 
-void cpu_move_to_register_immediate(cpu_t *self, byte_t *register_ptr, const char register_name) {
+void cpu_load_to_register_immediate(cpu_t *self, byte_t *register_ptr, const char register_name) {
   if (register_ptr == NULL) {
     puts("register_ptr is NULL for some reason");
     return;
@@ -129,9 +145,7 @@ void cpu_move_to_register_immediate(cpu_t *self, byte_t *register_ptr, const cha
   printf("Move to register %c an immediate;\n", register_name);
   printf("Register %c now: %d\n", register_name, *register_ptr);
 
-  const byte_t immediate = self->operands_buffer[0];
-
-  *register_ptr = immediate;
+  *register_ptr = self->operands_buffer[0];
 
   printf("Register %c after: %d\n", register_name, *register_ptr);
 }
@@ -144,18 +158,13 @@ bool validate_address(word_t address) {
   return true;
 }
 
-void cpu_jump(cpu_t *self, memory_t *memory) {
+#define MAKE_WORD(a, b) ((a << 8) | (b))
+
+void cpu_jump(cpu_t *self) {
   puts("Jump to an address;");
   printf("IP now: %d\n", self->reg_IP);
 
-  byte_t first_byte = self->operands_buffer[0];
-
-  word_t address = first_byte;
-  address <<= 8;
-
-  byte_t second_byte = self->operands_buffer[1];
-
-  address += second_byte;
+  const word_t address = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]);  // little endianess
 
   printf("Address for jumping: %d\n", address);
 
@@ -177,13 +186,14 @@ void cpu_add_immediate_to_register_A(cpu_t *self) {
   printf("Add to register A an immediate\n");
 
   const byte_t immediate = self->operands_buffer[0];
+  printf("Immediate: %d\n", immediate);
 
   printf("Register A now: %d\n", self->reg_A);
 
-  if (check_8bit_overflow(self->reg_A, immediate)) {
+  if (check_8bit_overflow(self->reg_A, immediate + cpu_status_register_enabled_on_mask(self, CARRY_MASK))) {
     puts("Error: Overflow in addition");
   } else {
-    self->reg_A += immediate;
+    self->reg_A += immediate + cpu_status_register_enabled_on_mask(self, CARRY_MASK);
   }
 
   printf("Register A after: %d\n", self->reg_A);
