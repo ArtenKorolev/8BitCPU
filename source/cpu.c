@@ -176,6 +176,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
 
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_t mode,
                           const memory_t *memory) {
+  printf("Loading register %c\n", register_name);
   byte_t value = 0;
   bool suc = true;
 
@@ -210,6 +211,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         addressing_mode_t mode) {
+  printf("Storing register %c\n", register_name);
   word_t address = 0x0000;
 
   switch (mode) {
@@ -236,6 +238,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
 }
 
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
+  printf("Adding to accumulator\n");
   byte_t value = 0;
   bool suc = true;
 
