@@ -33,6 +33,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         addressing_mode_t mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
+void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -122,6 +123,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case STXZY_OPCOD:
     case STAZX_OPCOD:
     case LDXZY_OPCOD:
+    case ANDI_OPCOD:
+    case ANDZX_OPCOD:
+    case ANDZ_OPCOD:
       bytes = 1;
       break;
     case JMPA_OPCOD:
@@ -137,6 +141,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case STAAY_OPCOD:
     case STXA_OPCOD:
     case STYA_OPCOD:
+    case ANDA_OPCOD:
+    case ANDAX_OPCOD:
+    case ANDAY_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
@@ -275,6 +282,36 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 
   cpu_update_flags_when_loading_register(self, value);
   *register_ptr = value;
+}
+
+void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
+  bool suc = true;
+
+  switch (mode) {
+    case IMMEDIATE:
+      self->reg_A &= self->operands_buffer[0];
+      break;
+    case ZERO_PAGE:
+      self->reg_A &= memory_read(memory, self->operands_buffer[0], &suc);
+      break;
+    case ZERO_PAGE_X:
+      self->reg_A &= memory_read(memory, (self->operands_buffer[0] + self->reg_X) & 0xFF, &suc);
+      break;
+    case ABSOLUTE:
+      self->reg_A &= memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF, &suc);
+      break;
+    case ABSOLUTE_X:
+      self->reg_A &= memory_read(
+          memory, (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF, &suc);
+    case ABSOLUTE_Y:
+      self->reg_A &= memory_read(
+          memory, (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF, &suc);
+      break;
+    default:
+      return;
+  }
+
+  cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,

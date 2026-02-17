@@ -39,6 +39,13 @@ typedef enum {
   STYZX_OPCOD = 0x94,  // store register Y to address in zero page address + X
   STYA_OPCOD = 0x8C,   // store register Y to address in absolute address
 
+  ANDI_OPCOD = 0x29,   // logical and A with immediate
+  ANDZ_OPCOD = 0x25,   // logical and A with a value from zero page address
+  ANDZX_OPCOD = 0x35,  // logical and A with a value from zero page address + X
+  ANDA_OPCOD = 0x2D,   // logical and A with a value from absolute address
+  ANDAX_OPCOD = 0x3D,  // logical and A with a value from absolute address + X
+  ANDAY_OPCOD = 0x39,  // logical and A with a value from absolute addres + Y
+
   ADDI_OPCOD = 0x69,  // add an immediate to A register
 
   JMPA_OPCOD = 0x4C,  // jump to an address
