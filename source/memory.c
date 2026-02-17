@@ -6,7 +6,7 @@
 #include "base.h"
 
 void memory_init(memory_t *self) {
-  byte_t *new_memory = (byte_t *)malloc(1 * MEMORY_SIZE);  // NOLINT
+  byte_t *new_memory = (byte_t *)malloc(1 * MEMORY_SIZE);
 
   if (new_memory == NULL) {
     self->memory = NULL;
@@ -17,7 +17,7 @@ void memory_init(memory_t *self) {
   }
 }
 
-byte_t memory_read(memory_t *self, const word_t address, bool *success) {
+byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
   if (address > self->memory_size || address < 0) {
     *success = false;
     return 0;
