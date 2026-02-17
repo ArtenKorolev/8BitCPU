@@ -113,12 +113,30 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case LDAZ_OPCOD:
     case LDAZX_OPCOD:
     case STAZ_OPCOD:
+    case LDXZ_OPCOD:
+    case LDYZ_OPCOD:
+    case LDYZX_OPCOD:
+    case STYZ_OPCOD:
+    case STYZX_OPCOD:
+    case STXZ_OPCOD:
+    case STXZY_OPCOD:
+    case STAZX_OPCOD:
+    case LDXZY_OPCOD:
       bytes = 1;
       break;
     case JMPA_OPCOD:
     case LDAA_OPCOD:
     case LDAAX_OPCOD:
     case LDAAY_OPCOD:
+    case LDYA_OPCOD:
+    case LDXA_OPCOD:
+    case LDYAX_OPCOD:
+    case LDXAY_OPCOD:
+    case STAAX_OPCOD:
+    case STAA_OPCOD:
+    case STAAY_OPCOD:
+    case STXA_OPCOD:
+    case STYA_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
@@ -131,7 +149,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
 void cpu_exec(cpu_t *self, memory_t *memory) {
   printf("Opcode description: ");
 
-  switch (self->reg_IR) {
+  switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
       break;
@@ -147,6 +165,30 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case LDAAX_OPCOD:
       cpu_load_to_register(self, &self->reg_A, 'A', ABSOLUTE_X, memory);
       break;
+    case LDXZ_OPCOD:
+      cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE, memory);
+      break;
+    case LDXZY_OPCOD:
+      cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE_Y, memory);
+      break;
+    case LDXA_OPCOD:
+      cpu_load_to_register(self, &self->reg_X, 'X', ABSOLUTE, memory);
+      break;
+    case LDXAY_OPCOD:
+      cpu_load_to_register(self, &self->reg_X, 'X', ABSOLUTE_Y, memory);
+      break;
+    case LDYZ_OPCOD:
+      cpu_load_to_register(self, &self->reg_Y, 'Y', ZERO_PAGE, memory);
+      break;
+    case LDYZX_OPCOD:
+      cpu_load_to_register(self, &self->reg_Y, 'Y', ZERO_PAGE_X, memory);
+      break;
+    case LDYA_OPCOD:
+      cpu_load_to_register(self, &self->reg_Y, 'Y', ABSOLUTE, memory);
+      break;
+    case LDYAX_OPCOD:
+      cpu_load_to_register(self, &self->reg_Y, 'Y', ABSOLUTE_X, memory);
+      break;
     case LDAAY_OPCOD:
       cpu_load_to_register(self, &self->reg_A, 'A', ABSOLUTE_Y, memory);
       break;
@@ -155,6 +197,35 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case STAZ_OPCOD:
       cpu_store_register(self, self->reg_A, 'A', memory, ZERO_PAGE);
+      break;
+    case STAZX_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, ZERO_PAGE_X);
+      break;
+    case STAA_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE);
+    case STAAX_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE_X);
+      break;
+    case STAAY_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE_Y);
+      break;
+    case STXA_OPCOD:
+      cpu_store_register(self, self->reg_X, 'X', memory, ABSOLUTE);
+      break;
+    case STXZ_OPCOD:
+      cpu_store_register(self, self->reg_X, 'X', memory, ZERO_PAGE);
+      break;
+    case STXZY_OPCOD:
+      cpu_store_register(self, self->reg_X, 'X', memory, ZERO_PAGE_Y);
+      break;
+    case STYA_OPCOD:
+      cpu_store_register(self, self->reg_Y, 'Y', memory, ABSOLUTE);
+      break;
+    case STYZ_OPCOD:
+      cpu_store_register(self, self->reg_Y, 'Y', memory, ZERO_PAGE);
+      break;
+    case STYZX_OPCOD:
+      cpu_store_register(self, self->reg_Y, 'Y', memory, ZERO_PAGE_X);
       break;
     case LDXI_OPCOD:
       cpu_load_to_register(self, &self->reg_X, 'X', IMMEDIATE, memory);
@@ -167,9 +238,6 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case JMPA_OPCOD:
       cpu_jump(self);
-      break;
-    default:
-      puts("Unknown opcode;");
       break;
   }
 }

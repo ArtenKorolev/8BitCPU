@@ -5,17 +5,43 @@
 
 typedef enum {
   NOP_OPCOD = 0xEA,
+
   LDAI_OPCOD = 0xA9,   // move to register A an immediate value
-  LDAZ_OPCOD = 0xA5,   // move to register A a value from zero page
-  LDAZX_OPCOD = 0xB5,  // move to register A a value from zero page + X
+  LDAZ_OPCOD = 0xA5,   // move to register A a value from zero page address
+  LDAZX_OPCOD = 0xB5,  // move to register A a value from zero page address + X
   LDAA_OPCOD = 0xAD,   // move to register A a value from absolute address
   LDAAX_OPCOD = 0xBD,  // move to register A a value from absolute address + X
   LDAAY_OPCOD = 0xB9,  // move to register A a value from absolute address + X
+
   LDXI_OPCOD = 0xA2,   // move to register X an immediate value
+  LDXZ_OPCOD = 0xA6,   // move to register X a value from zero page address
+  LDXZY_OPCOD = 0xB6,  // move to register X a value from zero page address + Y
+  LDXA_OPCOD = 0xAE,   // move to register X a value from absolute address
+  LDXAY_OPCOD = 0xBE,  // move to register X a value from absolute address + Y
+
   LDYI_OPCOD = 0xA0,   // move to register Y an immediate value
-  STAZ_OPCOD = 0x85,   // store register A to address in zero page
-  ADDI_OPCOD = 0x69,   // add an immediate to A register
-  JMPA_OPCOD = 0x4C,   // jump to an address
+  LDYZ_OPCOD = 0xA4,   // move to register Y a value from zero page address
+  LDYZX_OPCOD = 0xB4,  // move to register Y a value from zero page address + X
+  LDYA_OPCOD = 0xAC,   // move to register Y a value from absolute address
+  LDYAX_OPCOD = 0xBC,  // move to register Y a value from absolute address + X
+
+  STAZ_OPCOD = 0x85,   // store register A to address in zero page address
+  STAZX_OPCOD = 0x95,  // store register A to address in zero page address + X
+  STAA_OPCOD = 0x8D,   // store register A to address in absolute address
+  STAAX_OPCOD = 0x9D,  // store register A to address in absolute address + X
+  STAAY_OPCOD = 0x99,  // store register A to address in absolute address + Y
+
+  STXZ_OPCOD = 0x86,   // store register X to address in zero page address
+  STXZY_OPCOD = 0x96,  // store register X to address in zero page address + Y
+  STXA_OPCOD = 0x8E,   // store register X to address in absolute address
+
+  STYZ_OPCOD = 0x84,   // store register Y to address in zero page address
+  STYZX_OPCOD = 0x94,  // store register Y to address in zero page address + X
+  STYA_OPCOD = 0x8C,   // store register Y to address in absolute address
+
+  ADDI_OPCOD = 0x69,  // add an immediate to A register
+
+  JMPA_OPCOD = 0x4C,  // jump to an address
 } opcode_e;
 
 typedef enum {
