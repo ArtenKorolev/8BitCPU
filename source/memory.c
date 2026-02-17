@@ -30,6 +30,14 @@ byte_t memory_read(memory_t *self, const word_t address, bool *success) {
 
 #define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
 
+void memory_write(memory_t *self, word_t address, const byte_t value) {
+  if (IS_INVALID_MEMORY(self)) {
+    return;
+  }
+
+  self->memory[address] = value;
+}
+
 void memory_free(memory_t *self) {
   if (IS_INVALID_MEMORY(self)) {
     return;

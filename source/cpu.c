@@ -26,6 +26,7 @@ void cpu_load_to_register_zero_page(cpu_t *self, byte_t *register_ptr, const cha
 void cpu_load_to_register_zero_page_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_load_to_register_abs_addr(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_load_to_register_abs_addr_x(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
+void cpu_store_register_zero_page(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory);
 void cpu_add_immediate_to_register_A(cpu_t *self);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
@@ -109,6 +110,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ADDI_OPCOD:
     case LDAZ_OPCOD:
     case LDAZX_OPCOD:
+    case STAZ_OPCOD:
       bytes = 1;
       break;
     case JMPA_OPCOD:
@@ -141,6 +143,9 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case LDAZX_OPCOD:
       cpu_load_to_register_zero_page_x(self, &self->reg_A, 'A', memory);
+      break;
+    case STAZ_OPCOD:
+      cpu_store_register_zero_page(self, &self->reg_A, 'A', memory);
       break;
     case LDXI_OPCOD:
       cpu_load_to_register_immediate(self, &self->reg_X, 'X');
@@ -287,6 +292,20 @@ void cpu_jump(cpu_t *self) {
   self->reg_IP = address;
 
   printf("IP after: %d\n", self->reg_IP);
+}
+
+void cpu_store_register_zero_page(cpu_t *self, byte_t *register_ptr, const char register_name, memory_t *memory) {
+  printf("Strore register %c to address in zero page;\n", register_name);
+  const byte_t zero_page_address = self->operands_buffer[0];
+
+  printf("Address in zero page: %d\n", zero_page_address);
+
+  if (!validate_address(zero_page_address)) {
+    return;
+  }
+
+  memory_write(memory, zero_page_address, *register_ptr);  // flags are not affected
+  puts("Memory wrote");
 }
 
 void cpu_add_immediate_to_register_A(cpu_t *self) {
