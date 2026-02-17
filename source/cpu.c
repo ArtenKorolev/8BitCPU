@@ -34,6 +34,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
                         addressing_mode_t mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, const memory_t *memory, bool *suc);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -210,6 +211,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case STAA_OPCOD:
       cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE);
+      break;
     case STAAX_OPCOD:
       cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE_X);
       break;
@@ -252,29 +254,8 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_t mode,
                           const memory_t *memory) {
   printf("Loading register %c\n", register_name);
-  byte_t value = 0;
   bool suc = true;
-
-  switch (mode) {
-    case IMMEDIATE:
-      value = self->operands_buffer[0];
-      break;
-    case ZERO_PAGE:
-      value = memory_read(memory, self->operands_buffer[0], &suc);
-      break;
-    case ZERO_PAGE_X:
-      value = memory_read(memory, (self->operands_buffer[0] + self->reg_X) & 0xFF, &suc);
-      break;
-    case ABSOLUTE:
-      value = memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF, &suc);
-      break;
-    case ABSOLUTE_X:
-      value = memory_read(memory,
-                          (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF, &suc);
-      break;
-    default:
-      return;
-  }
+  const byte_t value = memory_read(memory, cpu_resolve_first_operand(self, mode, memory, &suc), &suc);
 
   if (!suc) {
     return;
@@ -286,91 +267,26 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
   bool suc = true;
+  const byte_t operand = (byte_t)memory_read(memory, cpu_resolve_first_operand(self, mode, memory, &suc), &suc);
 
-  switch (mode) {
-    case IMMEDIATE:
-      self->reg_A &= self->operands_buffer[0];
-      break;
-    case ZERO_PAGE:
-      self->reg_A &= memory_read(memory, self->operands_buffer[0], &suc);
-      break;
-    case ZERO_PAGE_X:
-      self->reg_A &= memory_read(memory, (self->operands_buffer[0] + self->reg_X) & 0xFF, &suc);
-      break;
-    case ABSOLUTE:
-      self->reg_A &= memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF, &suc);
-      break;
-    case ABSOLUTE_X:
-      self->reg_A &= memory_read(
-          memory, (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF, &suc);
-    case ABSOLUTE_Y:
-      self->reg_A &= memory_read(
-          memory, (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF, &suc);
-      break;
-    default:
-      return;
-  }
+  self->reg_A &= operand;
 
   cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         addressing_mode_t mode) {
+  bool suc = true;
   printf("Storing register %c\n", register_name);
-  word_t address = 0x0000;
 
-  switch (mode) {
-    case ZERO_PAGE:
-      address = (word_t)self->operands_buffer[0];
-      break;
-    case ZERO_PAGE_X:
-      address = ((word_t)self->operands_buffer[0] + self->reg_X) & 0xFF;
-      break;
-    case ABSOLUTE:
-      address = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF;
-      break;
-    case ABSOLUTE_X:
-      address = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF;
-      break;
-    case ABSOLUTE_Y:
-      address = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF;
-      break;
-    default:
-      return;
-  }
-
+  const word_t address = cpu_resolve_first_operand(self, mode, memory, &suc);
   memory_write(memory, address, register_value);
 }
 
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
   printf("Adding to accumulator\n");
-  byte_t value = 0;
   bool suc = true;
-
-  switch (mode) {
-    case IMMEDIATE:
-      value = self->operands_buffer[0];
-      break;
-    case ZERO_PAGE:
-      value = memory_read(memory, self->operands_buffer[0], &suc);
-      break;
-    case ZERO_PAGE_X:
-      value = memory_read(memory, (self->operands_buffer[0] + self->reg_X) & 0xFF, &suc);
-      break;
-    case ABSOLUTE:
-      value = memory_read(memory, MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF, &suc);
-      break;
-    case ABSOLUTE_X:
-      value = memory_read(memory,
-                          (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF, &suc);
-      break;
-    case ABSOLUTE_Y:
-      value = memory_read(memory,
-                          (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF, &suc);
-      break;
-    default:
-      return;
-  }
+  const byte_t value = cpu_resolve_first_operand(self, mode, memory, &suc);
 
   const byte_t carry = cpu_status_flag_is_set(self, CARRY_MASK) ? 1 : 0;
   const word_t result = value + self->reg_A + carry;
@@ -383,6 +299,35 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
 
   self->reg_A = (byte_t)result;
   cpu_update_flags_when_loading_register(self, self->reg_A);
+}
+
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, const memory_t *memory, bool *suc) {
+  word_t value = 0;
+
+  switch (mode) {
+    case IMMEDIATE:
+      value = self->operands_buffer[0];
+      break;
+    case ZERO_PAGE:
+      value = self->operands_buffer[0];
+      break;
+    case ZERO_PAGE_X:
+      value = (self->operands_buffer[0] + self->reg_X) & 0xFF;
+      break;
+    case ABSOLUTE:
+      value = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF;
+      break;
+    case ABSOLUTE_X:
+      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF;
+      break;
+    case ABSOLUTE_Y:
+      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF;
+      break;
+    default:
+      return 0;
+  }
+
+  return value;
 }
 
 void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value) {
@@ -399,14 +344,6 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
   }
 }
 
-bool validate_address(const word_t address) {
-  if (address < 0 || address > WORD_MAX) {
-    return false;
-  }
-
-  return true;
-}
-
 void cpu_jump(cpu_t *self) {
   puts("Jump to an address;");
   printf("IP now: %d\n", self->reg_IP);
@@ -414,11 +351,6 @@ void cpu_jump(cpu_t *self) {
   const word_t address = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]);  // little endianess
 
   printf("Address for jumping: %d\n", address);
-
-  if (!validate_address(address)) {
-    puts("Error: Error in validating address");
-    return;
-  }
 
   self->reg_IP = address;
 
