@@ -10,12 +10,28 @@ typedef enum {
   LDAZX_OPCOD = 0xB5,  // move to register A a value from zero page + X
   LDAA_OPCOD = 0xAD,   // move to register A a value from absolute address
   LDAAX_OPCOD = 0xBD,  // move to register A a value from absolute address + X
+  LDAAY_OPCOD = 0xB9,  // move to register A a value from absolute address + X
   LDXI_OPCOD = 0xA2,   // move to register X an immediate value
   LDYI_OPCOD = 0xA0,   // move to register Y an immediate value
   STAZ_OPCOD = 0x85,   // store register A to address in zero page
   ADDI_OPCOD = 0x69,   // add an immediate to A register
   JMPA_OPCOD = 0x4C,   // jump to an address
 } opcode_e;
+
+typedef enum {
+  IMMEDIATE,
+  ACCUMULATOR,
+  ZERO_PAGE,
+  ZERO_PAGE_X,
+  ZERO_PAGE_Y,
+  RELATIVE,
+  ABSOLUTE,
+  ABSOLUTE_X,
+  ABSOLUTE_Y,
+  INDERECT,
+  INDEXED_INDERECT,
+  INDERECT_INDEXED,
+} addressing_mode_t;
 
 typedef enum {
   FETCH,
