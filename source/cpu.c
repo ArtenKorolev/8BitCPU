@@ -121,7 +121,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case LDAAY_OPCOD:
       bytes = 2;
       break;
-    case NOOP_OPCOD:
+    case NOP_OPCOD:
       break;
   }
 
@@ -132,7 +132,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   printf("Opcode description: ");
 
   switch (self->reg_IR) {
-    case NOOP_OPCOD:
+    case NOP_OPCOD:
       puts("No operation;");
       break;
     case LDAI_OPCOD:

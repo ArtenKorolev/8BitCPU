@@ -4,7 +4,7 @@
 #include "memory.h"
 
 typedef enum {
-  NOOP_OPCOD = 0,
+  NOP_OPCOD = 0xEA,
   LDAI_OPCOD = 0xA9,   // move to register A an immediate value
   LDAZ_OPCOD = 0xA5,   // move to register A a value from zero page
   LDAZX_OPCOD = 0xB5,  // move to register A a value from zero page + X
