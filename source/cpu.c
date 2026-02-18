@@ -158,8 +158,6 @@ void cpu_set_remaining_bytes(cpu_t *self) {
 }
 
 void cpu_exec(cpu_t *self, memory_t *memory) {
-  printf("Opcode description: ");
-
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
@@ -276,8 +274,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
 
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_t mode,
                           const memory_t *memory) {
-  printf("Loading register %c\n", register_name);
-
+  puts("Load to register;");
   bool suc = true;
   bool is_address = true;
   const word_t first_operand = cpu_resolve_first_operand(self, mode, &suc, &is_address);
@@ -298,6 +295,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 }
 
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
+  puts("Logical AND with accumulator;");
   bool suc = true;
   bool is_address = true;
   const word_t operand = cpu_resolve_first_operand(self, mode, &suc, &is_address);
@@ -316,15 +314,15 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         const addressing_mode_t mode) {
+  puts("Store register;");
   bool suc = true;
-  printf("Storing register %c\n", register_name);
 
   const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
   memory_write(memory, address, register_value);
 }
 
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
-  printf("Adding to accumulator\n");
+  puts("Add to accumulator;");
   bool suc = true;
   bool is_address = true;
   byte_t value = cpu_resolve_first_operand(self, mode, &suc, &is_address);
@@ -400,15 +398,18 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
 }
 
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
+  puts("Pushing onto the stack;");
   memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);  // TODO: add wrapping around
 }
 
 byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
+  puts("Pulling from the stack;");
   bool suc = true;
   return memory_read(memory, STACK_LOWEST_ADDRESS + ++self->reg_SP, &suc);
 }
 
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
+  puts("Jumping to subroutine;");
   bool suc = true;
   const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
   const word_t pushing_address = self->reg_IP - 1;
@@ -420,17 +421,11 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
 }
 
 void cpu_jump(cpu_t *self) {
-  puts("Jump to an address;");
-  printf("IP now: %d\n", self->reg_IP);
-
+  puts("Cpu jump;");
   bool suc;
   const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
 
-  printf("Address for jumping: %d\n", address);
-
   self->reg_IP = address;
-
-  printf("IP after: %d\n", self->reg_IP);
 }
 
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
