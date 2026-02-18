@@ -35,6 +35,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
 word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, const memory_t *memory, bool *suc);
+void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -145,6 +146,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ANDA_OPCOD:
     case ANDAX_OPCOD:
     case ANDAY_OPCOD:
+    case JSR_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
@@ -247,6 +249,27 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case JMPA_OPCOD:
       cpu_jump(self);
+    case ANDA_OPCOD:
+      cpu_and_with_accumulator(self, memory, ABSOLUTE);
+      break;
+    case ANDAX_OPCOD:
+      cpu_and_with_accumulator(self, memory, ABSOLUTE_X);
+      break;
+    case ANDAY_OPCOD:
+      cpu_and_with_accumulator(self, memory, ABSOLUTE_Y);
+      break;
+
+    case ANDI_OPCOD:
+      cpu_and_with_accumulator(self, memory, IMMEDIATE);
+      break;
+    case ANDZ_OPCOD:
+      cpu_and_with_accumulator(self, memory, ZERO_PAGE);
+      break;
+    case ANDZX_OPCOD:
+      cpu_and_with_accumulator(self, memory, ZERO_PAGE_X);
+      break;
+    case JSR_OPCOD:
+      cpu_jump_subroutine(self, memory);
       break;
   }
 }
@@ -342,6 +365,26 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
   } else {
     cpu_status_flag_clear(self, NEGATIVE_MASK);
   }
+}
+
+void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
+  memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);  // TODO: add wrapping around
+}
+
+byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
+  bool suc = true;
+  return memory_read(memory, STACK_LOWEST_ADDRESS + ++self->reg_SP, &suc);
+}
+
+void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
+  bool suc = true;
+  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, memory, &suc);
+  const word_t pushing_address = self->reg_IP - 1;
+
+  cpu_push_value_onto_stack(self, memory, (pushing_address >> 8) & 0xFF);  // high
+  cpu_push_value_onto_stack(self, memory, pushing_address & 0xFF);         // low
+
+  self->reg_IP = jumping_address;
 }
 
 void cpu_jump(cpu_t *self) {
