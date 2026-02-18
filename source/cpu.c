@@ -34,7 +34,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
                         addressing_mode_t mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, const memory_t *memory, bool *suc);
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, bool *suc);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
@@ -278,7 +278,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
                           const memory_t *memory) {
   printf("Loading register %c\n", register_name);
   bool suc = true;
-  const byte_t value = memory_read(memory, cpu_resolve_first_operand(self, mode, memory, &suc), &suc);
+  const byte_t value = memory_read(memory, cpu_resolve_first_operand(self, mode, &suc), &suc);
 
   if (!suc) {
     return;
@@ -290,7 +290,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
   bool suc = true;
-  const byte_t operand = (byte_t)memory_read(memory, cpu_resolve_first_operand(self, mode, memory, &suc), &suc);
+  const byte_t operand = (byte_t)memory_read(memory, cpu_resolve_first_operand(self, mode, &suc), &suc);
 
   self->reg_A &= operand;
 
@@ -302,14 +302,14 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
   bool suc = true;
   printf("Storing register %c\n", register_name);
 
-  const word_t address = cpu_resolve_first_operand(self, mode, memory, &suc);
+  const word_t address = cpu_resolve_first_operand(self, mode, &suc);
   memory_write(memory, address, register_value);
 }
 
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
   printf("Adding to accumulator\n");
   bool suc = true;
-  const byte_t value = cpu_resolve_first_operand(self, mode, memory, &suc);
+  const byte_t value = cpu_resolve_first_operand(self, mode, &suc);
 
   const byte_t carry = cpu_status_flag_is_set(self, CARRY_MASK) ? 1 : 0;
   const word_t result = value + self->reg_A + carry;
@@ -324,7 +324,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, const memory_t *memory, bool *suc) {
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, bool *suc) {
   word_t value = 0;
 
   switch (mode) {
@@ -378,7 +378,7 @@ byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
 
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   bool suc = true;
-  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, memory, &suc);
+  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, &suc);
   const word_t pushing_address = self->reg_IP - 1;
 
   cpu_push_value_onto_stack(self, memory, (pushing_address >> 8) & 0xFF);  // high
@@ -391,7 +391,8 @@ void cpu_jump(cpu_t *self) {
   puts("Jump to an address;");
   printf("IP now: %d\n", self->reg_IP);
 
-  const word_t address = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]);  // little endianess
+  bool suc;
+  const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, &suc);
 
   printf("Address for jumping: %d\n", address);
 
