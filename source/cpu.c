@@ -248,6 +248,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case JMPA_OPCOD:
       cpu_jump(self);
+      break;
     case ANDA_OPCOD:
       cpu_and_with_accumulator(self, memory, ABSOLUTE);
       break;
