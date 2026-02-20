@@ -43,8 +43,8 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 
 #define CARRY_MASK 0x1
 #define ZERO_MASK 0x2
-#define INTERRUPT_MAKS 0x4
-#define DECIMAL_MAKS 0x8
+#define INTERRUPT_MASK 0x4
+#define DECIMAL_MASK 0x8
 #define BREAK_MASK 0x10
 #define OVERFLOW_MASK 0x40
 #define NEGATIVE_MASK 0x80
@@ -458,8 +458,8 @@ void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t ma
 void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
   cpu_dump_one_flag(self, "Carry", CARRY_MASK, stream);
   cpu_dump_one_flag(self, "Zero", ZERO_MASK, stream);
-  cpu_dump_one_flag(self, "Interrupt", INTERRUPT_MAKS, stream);
-  cpu_dump_one_flag(self, "Decimal", DECIMAL_MAKS, stream);
+  cpu_dump_one_flag(self, "Interrupt", INTERRUPT_MASK, stream);
+  cpu_dump_one_flag(self, "Decimal", DECIMAL_MASK, stream);
   cpu_dump_one_flag(self, "Break", BREAK_MASK, stream);
   cpu_dump_one_flag(self, "Overflow", OVERFLOW_MASK, stream);
   cpu_dump_one_flag(self, "Negative", NEGATIVE_MASK, stream);
