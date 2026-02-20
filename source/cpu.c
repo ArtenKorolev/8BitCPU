@@ -406,7 +406,8 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
 
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
   puts("Pushing onto the stack;");
-  memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);  // TODO: add wrapping around
+  memory_write(memory, (STACK_LOWEST_ADDRESS + self->reg_SP--) & 0xFF, value);
+  self->reg_SP &= 0xFF;
 }
 
 byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
