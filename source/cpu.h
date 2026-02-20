@@ -54,6 +54,15 @@ typedef enum {
   ADDI_OPCOD = 0x69,  // add an immediate to A register
 
   JMPA_OPCOD = 0x4C,  // jump to an address
+
+  BCC_OPCOD = 0x90,  // Branch if carry clear
+  BCS_OPCOD = 0xB0,  // Branch if carry set
+  BEQ_OPCOD = 0xF0,  // Branch if zero set
+  BNE_OPCOD = 0xD0,  // Branch if zero clear
+  BPL_OPCOD = 0x10,  // Branch if negative clear
+  BMI_OPCOD = 0x30,  // Branch if negative set
+  BVC_OPCOD = 0x50,  // Branch if overflow clear
+  BVS_OPCOD = 0x70,  // Branch if overflow set
 } opcode_e;
 
 typedef enum {

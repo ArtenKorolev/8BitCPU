@@ -38,6 +38,7 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode
                                  bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
+void cpu_branch_based_on_flag(cpu_t *self, const byte_t flag, const bool branch_if_set);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -130,6 +131,14 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ANDI_OPCOD:
     case ANDZX_OPCOD:
     case ANDZ_OPCOD:
+    case BCC_OPCOD:
+    case BCS_OPCOD:
+    case BEQ_OPCOD:
+    case BMI_OPCOD:
+    case BNE_OPCOD:
+    case BPL_OPCOD:
+    case BVC_OPCOD:
+    case BVS_OPCOD:
       bytes = 1;
       break;
     case JMPA_OPCOD:
@@ -275,6 +284,30 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case RTS_OPCOD:
       cpu_return_from_subroutine(self, memory);
       break;
+    case BCC_OPCOD:
+      cpu_branch_based_on_flag(self, CARRY_MASK, false);
+      break;
+    case BCS_OPCOD:
+      cpu_branch_based_on_flag(self, CARRY_MASK, true);
+      break;
+    case BEQ_OPCOD:
+      cpu_branch_based_on_flag(self, ZERO_MASK, true);
+      break;
+    case BNE_OPCOD:
+      cpu_branch_based_on_flag(self, ZERO_MASK, false);
+      break;
+    case BPL_OPCOD:
+      cpu_branch_based_on_flag(self, NEGATIVE_MASK, false);
+      break;
+    case BMI_OPCOD:
+      cpu_branch_based_on_flag(self, NEGATIVE_MASK, true);
+      break;
+    case BVC_OPCOD:
+      cpu_branch_based_on_flag(self, OVERFLOW_MASK, false);
+      break;
+    case BVS_OPCOD:
+      cpu_branch_based_on_flag(self, OVERFLOW_MASK, true);
+      break;
   }
 }
 
@@ -368,6 +401,7 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode
       }
 
       break;
+    case RELATIVE:
     case ZERO_PAGE:
       value = self->operands_buffer[0];
       break;
@@ -445,6 +479,17 @@ void cpu_jump(cpu_t *self) {
 
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
   return memory_read(memory, self->reg_IP++, success);
+}
+
+void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set) {
+  bool suc;
+
+  const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, &suc, NULL);
+  const bool flag_is_set = cpu_status_flag_is_set(self, mask);
+
+  if ((branch_if_set && flag_is_set) || (!branch_if_set && !flag_is_set)) {
+    self->reg_IP += offset;
+  }
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {
