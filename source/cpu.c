@@ -347,6 +347,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   }
 
   self->reg_A = (byte_t)result;
+  cpu_dump(self, stdout);
   cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
@@ -443,4 +444,36 @@ void cpu_jump(cpu_t *self) {
 
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
   return memory_read(memory, self->reg_IP++, success);
+}
+
+void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {
+  if (cpu_status_flag_is_set(self, mask)) {
+    fprintf(stream, "%s flag is set\n", flag_name);
+  } else {
+    fprintf(stream, "%s flag is clear\n", flag_name);
+  }
+}
+
+void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
+  cpu_dump_one_flag(self, "Carry", CARRY_MASK, stream);
+  cpu_dump_one_flag(self, "Zero", ZERO_MASK, stream);
+  cpu_dump_one_flag(self, "Interrupt", INTERRUPT_MAKS, stream);
+  cpu_dump_one_flag(self, "Decimal", DECIMAL_MAKS, stream);
+  cpu_dump_one_flag(self, "Break", BREAK_MASK, stream);
+  cpu_dump_one_flag(self, "Overflow", OVERFLOW_MASK, stream);
+  cpu_dump_one_flag(self, "Negative", NEGATIVE_MASK, stream);
+}
+
+void cpu_dump(const cpu_t *self, FILE *stream) {
+  fputs("======= Dumping CPU =======\n", stream);
+
+  fprintf(stream, "Program counter (instruction pointer): %x\n", self->reg_IP);
+  fprintf(stream, "Stack pointer: %x\n", self->reg_SP);
+  fprintf(stream, "Instruction register: %x\n", self->reg_IR);
+  fprintf(stream, "Accumulator: %x\n", self->reg_A);
+  fprintf(stream, "Index register X: %x\n", self->reg_X);
+  fprintf(stream, "Index register Y: %x\n", self->reg_Y);
+  cpu_dump_processor_status(self, stream);
+
+  fputs("===== End dumping CPU =====\n", stream);
 }

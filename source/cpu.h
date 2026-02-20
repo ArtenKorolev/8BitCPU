@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 #include "base.h"
 #include "memory.h"
 
@@ -91,3 +93,4 @@ typedef struct {
 
 void cpu_init(cpu_t *self);
 void cpu_do_cycle(cpu_t *self, memory_t *memory);
+void cpu_dump(const cpu_t *self, FILE *stream);
