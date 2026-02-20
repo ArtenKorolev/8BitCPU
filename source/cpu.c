@@ -39,6 +39,7 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t flag, const bool branch_if_set);
+void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -139,6 +140,12 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case BPL_OPCOD:
     case BVC_OPCOD:
     case BVS_OPCOD:
+    case CMPI_OPCOD:
+    case CMPZ_OPCOD:
+    case CPYI_OPCOD:
+    case CPYZ_OPCOD:
+    case CPXI_OPCOD:
+    case CPXZ_OPCOD:
       bytes = 1;
       break;
     case JMPA_OPCOD:
@@ -158,6 +165,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ANDAX_OPCOD:
     case ANDAY_OPCOD:
     case JSR_OPCOD:
+    case CMPA_OPCOD:
+    case CPXA_OPCOD:
+    case CPYA_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
@@ -308,6 +318,33 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case BVS_OPCOD:
       cpu_branch_based_on_flag(self, OVERFLOW_MASK, true);
       break;
+    case CMPI_OPCOD:
+      cpu_compare(self, memory, self->reg_A, IMMEDIATE);
+      break;
+    case CMPZ_OPCOD:
+      cpu_compare(self, memory, self->reg_A, ZERO_PAGE);
+      break;
+    case CMPA_OPCOD:
+      cpu_compare(self, memory, self->reg_A, ABSOLUTE);
+      break;
+    case CPXI_OPCOD:
+      cpu_compare(self, memory, self->reg_X, IMMEDIATE);
+      break;
+    case CPXZ_OPCOD:
+      cpu_compare(self, memory, self->reg_X, ZERO_PAGE);
+      break;
+    case CPXA_OPCOD:
+      cpu_compare(self, memory, self->reg_X, ABSOLUTE);
+      break;
+    case CPYI_OPCOD:
+      cpu_compare(self, memory, self->reg_Y, IMMEDIATE);
+      break;
+    case CPYZ_OPCOD:
+      cpu_compare(self, memory, self->reg_Y, ZERO_PAGE);
+      break;
+    case CPYA_OPCOD:
+      cpu_compare(self, memory, self->reg_Y, ABSOLUTE);
+      break;
   }
 }
 
@@ -440,8 +477,7 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
 
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
   puts("Pushing onto the stack;");
-  memory_write(memory, (STACK_LOWEST_ADDRESS + self->reg_SP--) & 0xFF, value);
-  self->reg_SP &= 0xFF;
+  memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);
 }
 
 byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
@@ -482,21 +518,53 @@ byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
 }
 
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set) {
+  puts("Branching;");
   bool suc;
 
   const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, &suc, NULL);
   const bool flag_is_set = cpu_status_flag_is_set(self, mask);
 
   if ((branch_if_set && flag_is_set) || (!branch_if_set && !flag_is_set)) {
-    self->reg_IP += offset;
+    self->reg_IP += (int8_t)offset;
+  }
+}
+
+void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode) {
+  puts("Comparing;");
+  bool suc;
+  bool is_address = true;
+  word_t value = cpu_resolve_first_operand(self, mode, &suc, &is_address);
+
+  if (is_address) {
+    value = memory_read(memory, value, &suc);
+  }
+
+  if (register_value >= value) {
+    cpu_status_flag_set(self, CARRY_MASK);
+  } else {
+    cpu_status_flag_clear(self, CARRY_MASK);
+  }
+
+  if (register_value == value) {
+    cpu_status_flag_set(self, ZERO_MASK);
+  } else {
+    cpu_status_flag_clear(self, ZERO_MASK);
+  }
+
+  const byte_t result = (byte_t)(register_value - (byte_t)value);
+
+  if ((result & NEGATIVE_MASK) != 0) {
+    cpu_status_flag_set(self, NEGATIVE_MASK);
+  } else {
+    cpu_status_flag_clear(self, NEGATIVE_MASK);
   }
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {
   if (cpu_status_flag_is_set(self, mask)) {
-    fprintf(stream, "%s flag is set\n", flag_name);
+    fprintf(stream, "\t%s flag is set\n", flag_name);
   } else {
-    fprintf(stream, "%s flag is clear\n", flag_name);
+    fprintf(stream, "\t%s flag is clear\n", flag_name);
   }
 }
 
@@ -513,12 +581,12 @@ void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
 void cpu_dump(const cpu_t *self, FILE *stream) {
   fputs("======= Dumping CPU =======\n", stream);
 
-  fprintf(stream, "Program counter (instruction pointer): %x\n", self->reg_IP);
-  fprintf(stream, "Stack pointer: %x\n", self->reg_SP);
-  fprintf(stream, "Instruction register: %x\n", self->reg_IR);
-  fprintf(stream, "Accumulator: %x\n", self->reg_A);
-  fprintf(stream, "Index register X: %x\n", self->reg_X);
-  fprintf(stream, "Index register Y: %x\n", self->reg_Y);
+  fprintf(stream, "\tProgram counter (instruction pointer): %x\n", self->reg_IP);
+  fprintf(stream, "\tStack pointer: %x\n", self->reg_SP);
+  fprintf(stream, "\tInstruction register: %x\n", self->reg_IR);
+  fprintf(stream, "\tAccumulator: %x\n", self->reg_A);
+  fprintf(stream, "\tIndex register X: %x\n", self->reg_X);
+  fprintf(stream, "\tIndex register Y: %x\n", self->reg_Y);
   cpu_dump_processor_status(self, stream);
 
   fputs("===== End dumping CPU =====\n", stream);

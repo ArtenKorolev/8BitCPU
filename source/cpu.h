@@ -63,6 +63,18 @@ typedef enum {
   BMI_OPCOD = 0x30,  // Branch if negative set
   BVC_OPCOD = 0x50,  // Branch if overflow clear
   BVS_OPCOD = 0x70,  // Branch if overflow set
+
+  CMPI_OPCOD = 0xC9,  // Compare accumulator with immediate
+  CMPZ_OPCOD = 0xC5,  // Compare accumulator with zero page
+  CMPA_OPCOD = 0xCD,  // Compare accumulator with absolute
+
+  CPXI_OPCOD = 0xE0,  // Compare X with immediate
+  CPXZ_OPCOD = 0xE4,  // Compare X with zero page
+  CPXA_OPCOD = 0xEC,  // Compare X with absolute
+
+  CPYI_OPCOD = 0xC0,  // Compare Y with immediate
+  CPYZ_OPCOD = 0xC4,  // Compare Y with zero page
+  CPYA_OPCOD = 0xCC,  // Compare Y with absolute
 } opcode_e;
 
 typedef enum {
