@@ -47,6 +47,7 @@ typedef enum {
   ANDAY_OPCOD = 0x39,  // logical and A with a value from absolute addres + Y
 
   JSR_OPCOD = 0x20,  // jump to subroutine (with saving return address)
+  RTS_OPCOD = 0x60,  // return from subroutine
 
   ADDI_OPCOD = 0x69,  // add an immediate to A register
 

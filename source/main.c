@@ -27,8 +27,9 @@ int main(const int argc, const char **argv) {
 
   file_content_free(&file_content);
 
-  for (int i = 0; i < 30; ++i) {
+  for (;;) {
     cpu_do_cycle(&cpu, &memory);
+    for (int i = 0; i < 10000000; i++);
   }
 
   memory_free(&memory);

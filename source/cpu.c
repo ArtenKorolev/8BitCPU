@@ -37,6 +37,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mo
 word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, bool *suc,
                                  bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
+void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -151,6 +152,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
       bytes = 2;
       break;
     case NOP_OPCOD:
+    case RTS_OPCOD:
       break;
   }
 
@@ -269,6 +271,9 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case JSR_OPCOD:
       cpu_jump_subroutine(self, memory);
+      break;
+    case RTS_OPCOD:
+      cpu_return_from_subroutine(self, memory);
       break;
   }
 }
@@ -413,7 +418,7 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   puts("Jumping to subroutine;");
   bool suc = true;
   const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
-  const word_t pushing_address = self->reg_IP - 1;
+  const word_t pushing_address = self->reg_IP;  // address of the next instruction to execute after the subroutine call
 
   cpu_push_value_onto_stack(self, memory, (pushing_address >> 8) & 0xFF);  // high
   cpu_push_value_onto_stack(self, memory, pushing_address & 0xFF);         // low
@@ -421,8 +426,15 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   self->reg_IP = jumping_address;
 }
 
+void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
+  puts("Return from subroutine;");
+  word_t address = cpu_pull_from_stack(self, memory);
+  address += (cpu_pull_from_stack(self, memory) << 8);
+  self->reg_IP = address;
+}
+
 void cpu_jump(cpu_t *self) {
-  puts("Cpu jump;");
+  puts("Jump;");
   bool suc;
   const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
 
