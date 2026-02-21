@@ -75,6 +75,11 @@ typedef enum {
   CPYI_OPCOD = 0xC0,  // Compare Y with immediate
   CPYZ_OPCOD = 0xC4,  // Compare Y with zero page
   CPYA_OPCOD = 0xCC,  // Compare Y with absolute
+
+  CLC_OPCOD = 0x18,  // clear carry
+  CLD_OPCOD = 0xD8,  // clear decimal mode
+  CLI_OPCOD = 0x58,  // clear interrupt disable
+  CLV_OPCOD = 0xB8,  // clear overflow
 } opcode_e;
 
 typedef enum {

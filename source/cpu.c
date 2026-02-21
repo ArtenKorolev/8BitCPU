@@ -113,6 +113,10 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   byte_t bytes = 0;
 
   switch (self->reg_IR) {
+    case CLC_OPCOD:
+    case CLD_OPCOD:
+    case CLI_OPCOD:
+    case CLV_OPCOD:
     case LDAI_OPCOD:
     case LDXI_OPCOD:
     case LDYI_OPCOD:
@@ -185,6 +189,18 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case LDAI_OPCOD:
       cpu_load_to_register(self, &self->reg_A, 'A', IMMEDIATE, memory);
+      break;
+    case CLC_OPCOD:
+      cpu_status_flag_clear(self, CARRY_MASK);
+      break;
+    case CLV_OPCOD:
+      cpu_status_flag_clear(self, OVERFLOW_MASK);
+      break;
+    case CLI_OPCOD:
+      cpu_status_flag_clear(self, INTERRUPT_MASK);
+      break;
+    case CLD_OPCOD:
+      cpu_status_flag_clear(self, DECIMAL_MASK);
       break;
     case LDAZ_OPCOD:
       cpu_load_to_register(self, &self->reg_A, 'A', ZERO_PAGE, memory);
