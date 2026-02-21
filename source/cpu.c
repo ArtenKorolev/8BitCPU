@@ -603,24 +603,13 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
     value = memory_read(memory, value, &suc);
   }
 
+  const byte_t result = (byte_t)(register_value - (byte_t)value);
+  cpu_update_flags_when_loading_register(self, result);
+
   if (register_value >= value) {
     cpu_status_flag_set(self, CARRY_MASK);
   } else {
     cpu_status_flag_clear(self, CARRY_MASK);
-  }
-
-  if (register_value == value) {
-    cpu_status_flag_set(self, ZERO_MASK);
-  } else {
-    cpu_status_flag_clear(self, ZERO_MASK);
-  }
-
-  const byte_t result = (byte_t)(register_value - (byte_t)value);
-
-  if ((result & NEGATIVE_MASK) != 0) {
-    cpu_status_flag_set(self, NEGATIVE_MASK);
-  } else {
-    cpu_status_flag_clear(self, NEGATIVE_MASK);
   }
 }
 
