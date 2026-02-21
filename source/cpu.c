@@ -9,14 +9,20 @@
 
 #define STACK_LOWEST_ADDRESS 0x0100
 
+void cpu_reset_operands_buffer(cpu_t *self);
+
 void cpu_init(cpu_t *self) {
   self->reg_IP = 0;
   self->reg_SP = 0xFF;
   self->reg_A = self->reg_X = self->reg_Y = 0;
 
-  memset(self->operands_buffer, 0, 16);
-  self->operands_buffer_index = 0;
+  cpu_reset_operands_buffer(self);
   self->state = FETCH;
+}
+
+void cpu_reset_operands_buffer(cpu_t *self) {
+  memset(self->operands_buffer, 0, OPERANDS_BUFFER_SIZE);
+  self->operands_buffer_index = 0;
 }
 
 // private cpu functions
@@ -104,12 +110,12 @@ void cpu_do_cycle(cpu_t *self, memory_t *memory) {
       return;
     case WRITEBACK:
       self->state = FETCH;
-      memset(self->operands_buffer, 0, 16);
-      self->operands_buffer_index = 0;
+      cpu_reset_operands_buffer(self);
       self->remaining_bytes = 0;
       return;
   }
 }
+
 void cpu_set_remaining_bytes(cpu_t *self) {
   byte_t bytes = 0;
 

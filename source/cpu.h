@@ -110,13 +110,15 @@ typedef enum {
   WRITEBACK,
 } cpu_state_e;
 
+#define OPERANDS_BUFFER_SIZE 8
+
 typedef struct {
   byte_t reg_A, reg_X, reg_Y, reg_P;
   byte_t reg_SP;
   word_t reg_IP;
 
   byte_t remaining_bytes;
-  byte_t operands_buffer[16];
+  byte_t operands_buffer[OPERANDS_BUFFER_SIZE];
   byte_t operands_buffer_index;
   cpu_state_e state;
   opcode_e reg_IR;
