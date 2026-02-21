@@ -40,6 +40,7 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
+void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -139,6 +140,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case BCC_OPCOD:
     case BCS_OPCOD:
     case BEQ_OPCOD:
+    case DECZX_OPCOD:
+    case DECZ_OPCOD:
     case BMI_OPCOD:
     case BNE_OPCOD:
     case BPL_OPCOD:
@@ -152,6 +155,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CPXZ_OPCOD:
       bytes = 1;
       break;
+    case DECA_OPCOD:
+    case DECAX_OPCOD:
     case JMPA_OPCOD:
     case LDAA_OPCOD:
     case LDAAX_OPCOD:
@@ -186,6 +191,18 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
+      break;
+    case DECA_OPCOD:
+      cpu_decrement_memory(self, memory, ABSOLUTE);
+      break;
+    case DECAX_OPCOD:
+      cpu_decrement_memory(self, memory, ABSOLUTE_X);
+      break;
+    case DECZ_OPCOD:
+      cpu_decrement_memory(self, memory, ZERO_PAGE);
+      break;
+    case DECZX_OPCOD:
+      cpu_decrement_memory(self, memory, ZERO_PAGE_X);
       break;
     case LDAI_OPCOD:
       cpu_load_to_register(self, &self->reg_A, 'A', IMMEDIATE, memory);
@@ -590,6 +607,15 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
   } else {
     cpu_status_flag_clear(self, NEGATIVE_MASK);
   }
+}
+
+void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode) {
+  bool suc;
+
+  const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
+  const byte_t value = memory_read(memory, address, &suc);
+
+  memory_write(memory, address, value - 1);
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {

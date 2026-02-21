@@ -80,6 +80,11 @@ typedef enum {
   CLD_OPCOD = 0xD8,  // clear decimal mode
   CLI_OPCOD = 0x58,  // clear interrupt disable
   CLV_OPCOD = 0xB8,  // clear overflow
+
+  DECZ_OPCOD = 0xC6,
+  DECZX_OPCOD = 0xD6,
+  DECA_OPCOD = 0xCE,
+  DECAX_OPCOD = 0xDE,
 } opcode_e;
 
 typedef enum {
