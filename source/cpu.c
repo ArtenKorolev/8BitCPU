@@ -47,6 +47,7 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
+void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -120,6 +121,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   byte_t bytes = 0;
 
   switch (self->reg_IR) {
+    case DEX_OPCOD:
+    case DEY_OPCOD:
     case CLC_OPCOD:
     case CLD_OPCOD:
     case CLI_OPCOD:
@@ -197,6 +200,12 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
+      break;
+    case DEX_OPCOD:
+      cpu_decrement_register(self, &self->reg_X);
+      break;
+    case DEY_OPCOD:
+      cpu_decrement_register(self, &self->reg_Y);
       break;
     case DECA_OPCOD:
       cpu_decrement_memory(self, memory, ABSOLUTE);
@@ -619,9 +628,16 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t
   bool suc;
 
   const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
-  const byte_t value = memory_read(memory, address, &suc);
+  const byte_t value = memory_read(memory, address, &suc) - 1;
 
-  memory_write(memory, address, value - 1);
+  cpu_update_flags_when_loading_register(self, value);
+
+  memory_write(memory, address, value);
+}
+
+void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
+  --(*register_ptr);
+  cpu_update_flags_when_loading_register(self, *register_ptr);
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {

@@ -85,6 +85,9 @@ typedef enum {
   DECZX_OPCOD = 0xD6,
   DECA_OPCOD = 0xCE,
   DECAX_OPCOD = 0xDE,
+
+  DEX_OPCOD = 0xCA,
+  DEY_OPCOD = 0x88,
 } opcode_e;
 
 typedef enum {
