@@ -38,7 +38,7 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode
                                  bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
-void cpu_branch_based_on_flag(cpu_t *self, const byte_t flag, const bool branch_if_set);
+void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
@@ -439,6 +439,9 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode
 
       break;
     case RELATIVE:
+      if (return_value_is_address != NULL) {
+        *return_value_is_address = false;
+      }
     case ZERO_PAGE:
       value = self->operands_buffer[0];
       break;
@@ -477,12 +480,24 @@ void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_va
 
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
   puts("Pushing onto the stack;");
+
+  if (self->reg_SP == 0) {
+    puts("Error: stack overflow");
+    exit(1);
+  }
+
   memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);
 }
 
 byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
   puts("Pulling from the stack;");
   bool suc = true;
+
+  if (self->reg_SP == 0xFF) {
+    puts("Error: pulling from empty stack");
+    exit(1);
+  }
+
   return memory_read(memory, STACK_LOWEST_ADDRESS + ++self->reg_SP, &suc);
 }
 
@@ -490,7 +505,8 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   puts("Jumping to subroutine;");
   bool suc = true;
   const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
-  const word_t pushing_address = self->reg_IP;  // address of the next instruction to execute after the subroutine call
+  const word_t pushing_address =
+      self->reg_IP - 1;  // address of the next instruction to execute after the subroutine call
 
   cpu_push_value_onto_stack(self, memory, (pushing_address >> 8) & 0xFF);  // high
   cpu_push_value_onto_stack(self, memory, pushing_address & 0xFF);         // low
@@ -502,7 +518,7 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
   puts("Return from subroutine;");
   word_t address = cpu_pull_from_stack(self, memory);
   address += (cpu_pull_from_stack(self, memory) << 8);
-  self->reg_IP = address;
+  self->reg_IP = address + 1;
 }
 
 void cpu_jump(cpu_t *self) {
