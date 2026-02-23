@@ -48,6 +48,7 @@ void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
+void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -136,6 +137,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case STAZ_OPCOD:
     case LDXZ_OPCOD:
     case LDYZ_OPCOD:
+    case BITZ_OPCOD:
     case LDYZX_OPCOD:
     case STYZ_OPCOD:
     case STYZX_OPCOD:
@@ -185,6 +187,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case JSR_OPCOD:
     case CMPA_OPCOD:
     case CPXA_OPCOD:
+    case BITA_OPCOD:
     case CPYA_OPCOD:
       bytes = 2;
       break;
@@ -200,6 +203,12 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
+      break;
+    case BITA_OPCOD:
+      cpu_test_bit(self, memory, ABSOLUTE);
+      break;
+    case BITZ_OPCOD:
+      cpu_test_bit(self, memory, ZERO_PAGE);
       break;
     case DEX_OPCOD:
       cpu_decrement_register(self, &self->reg_X);
@@ -613,11 +622,13 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
   }
 }
 
+#define DEC(x) ((x) - 1)
+
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode) {
   bool suc;
 
   const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
-  const byte_t value = memory_read(memory, address, &suc) - 1;
+  const byte_t value = DEC(memory_read(memory, address, &suc));
 
   cpu_update_flags_when_loading_register(self, value);
 
@@ -627,6 +638,33 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
   --(*register_ptr);
   cpu_update_flags_when_loading_register(self, *register_ptr);
+}
+
+void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_t mode) {
+  bool suc;
+
+  const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
+  const byte_t value = memory_read(memory, address, &suc);
+
+  const byte_t result = self->reg_A & value;
+
+  if (result == 0) {
+    cpu_status_flag_set(self, ZERO_MASK);
+  } else {
+    cpu_status_flag_clear(self, ZERO_MASK);
+  }
+
+  if (value & NEGATIVE_MASK) {
+    cpu_status_flag_set(self, NEGATIVE_MASK);
+  } else {
+    cpu_status_flag_clear(self, NEGATIVE_MASK);
+  }
+
+  if (value & OVERFLOW_MASK) {
+    cpu_status_flag_set(self, OVERFLOW_MASK);
+  } else {
+    cpu_status_flag_clear(self, OVERFLOW_MASK);
+  }
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {
