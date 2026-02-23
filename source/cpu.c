@@ -18,6 +18,7 @@ void cpu_init(cpu_t *self) {
 
   cpu_reset_operands_buffer(self);
   self->state = FETCH;
+  self->last_trap = OK;
 }
 
 void cpu_reset_operands_buffer(cpu_t *self) {
@@ -40,8 +41,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
                         addressing_mode_e mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *suc,
-                                 bool *return_value_is_address);
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
@@ -73,49 +73,52 @@ void cpu_status_flag_clear(cpu_t *self, const byte_t mask) {
   self->reg_P &= ~mask;
 }
 
-void cpu_do_cycle(cpu_t *self, memory_t *memory) {
+trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
+
   switch (self->state) {
     case FETCH:
       self->reg_IR = cpu_fetch(self, memory, &success);
 
       if (!success) {  // failed fetching opcode
         self->reg_IR = 0;
-        return;
+        self->last_trap = SEGMENTATION_FAULT;
+        break;
       }
 
       self->state = FETCH_OPERAND;
       cpu_set_remaining_bytes(self);
 
-      return;
+      break;
     case FETCH_OPERAND:
       if (self->remaining_bytes == 0) {
         self->state = DECODE;
-        return;
+        break;
       }
 
       self->operands_buffer[self->operands_buffer_index++] = cpu_fetch(self, memory, &success);
 
-      if (!success) {  // failed fetching operands
-        return;
+      if (!success) {
+        self->last_trap = SEGMENTATION_FAULT;
+        break;
       }
 
       --self->remaining_bytes;
-      return;
+      break;
     case DECODE:
-      // decoding
       self->state = EXECUTE;
-      return;
     case EXECUTE:
       cpu_exec(self, memory);
       self->state = WRITEBACK;
-      return;
+      break;
     case WRITEBACK:
       self->state = FETCH;
       cpu_reset_operands_buffer(self);
       self->remaining_bytes = 0;
-      return;
+      break;
   }
+
+  return self->last_trap;
 }
 
 void cpu_set_remaining_bytes(cpu_t *self) {
@@ -402,6 +405,8 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case CPYA_OPCOD:
       cpu_compare(self, memory, self->reg_Y, ABSOLUTE);
       break;
+    default:
+      self->last_trap = ILLEGAL_OPCODE;
   }
 }
 
@@ -410,7 +415,9 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
   puts("Load to register;");
   bool suc = true;
   bool is_address = true;
-  const word_t first_operand = cpu_resolve_first_operand(self, mode, &suc, &is_address);
+
+  const word_t first_operand = cpu_resolve_first_operand(self, mode, &is_address);
+
   byte_t value = 0;
 
   if (is_address) {
@@ -420,6 +427,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
   }
 
   if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
     return;
   }
 
@@ -431,13 +439,20 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
   puts("Logical AND with accumulator;");
   bool suc = true;
   bool is_address = true;
-  const word_t operand = cpu_resolve_first_operand(self, mode, &suc, &is_address);
+
+  const word_t operand = cpu_resolve_first_operand(self, mode, &is_address);
+
   byte_t value = 0;
 
   if (is_address) {
     value = memory_read(memory, operand, &suc);
   } else {
     value = operand;
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
   }
 
   self->reg_A &= value;
@@ -448,9 +463,9 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         const addressing_mode_e mode) {
   puts("Store register;");
-  bool suc = true;
 
-  const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
+  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+
   memory_write(memory, address, register_value);
 }
 
@@ -458,10 +473,15 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   puts("Add to accumulator;");
   bool suc = true;
   bool is_address = true;
-  byte_t value = cpu_resolve_first_operand(self, mode, &suc, &is_address);
+  byte_t value = cpu_resolve_first_operand(self, mode, &is_address);
 
   if (is_address) {
     value = memory_read(memory, value, &suc);
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
   }
 
   const byte_t carry = cpu_status_flag_is_set(self, CARRY_MASK) ? 1 : 0;
@@ -478,8 +498,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *suc,
-                                 bool *return_value_is_address) {
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address) {
   word_t value = 0;
 
   if (return_value_is_address != NULL) {
@@ -540,7 +559,8 @@ void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value
 
   if (self->reg_SP == 0) {
     puts("Error: stack overflow");
-    exit(1);
+    self->last_trap = STACK_OVERFLOW;
+    return;
   }
 
   memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);
@@ -551,17 +571,25 @@ byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
   bool suc = true;
 
   if (self->reg_SP == 0xFF) {
-    puts("Error: pulling from empty stack");
-    exit(1);
+    puts("Error: stack underflow");
+    self->last_trap = STACK_UNDERFLOW;
+    return 0;
   }
 
-  return memory_read(memory, STACK_LOWEST_ADDRESS + ++self->reg_SP, &suc);
+  const byte_t value = memory_read(memory, STACK_LOWEST_ADDRESS + ++self->reg_SP, &suc);
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return 0;
+  }
+
+  return value;
 }
 
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   puts("Jumping to subroutine;");
-  bool suc = true;
-  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
+  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
+
   const word_t pushing_address =
       self->reg_IP - 1;  // address of the next instruction to execute after the subroutine call
 
@@ -580,8 +608,7 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
 
 void cpu_jump(cpu_t *self) {
   puts("Jump;");
-  bool suc;
-  const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, &suc, NULL);
+  const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
 
   self->reg_IP = address;
 }
@@ -592,9 +619,15 @@ byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
 
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set) {
   puts("Branching;");
-  bool suc;
+  bool suc = true;
 
-  const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, &suc, NULL);
+  const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, NULL);
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
   const bool flag_is_set = cpu_status_flag_is_set(self, mask);
 
   if ((branch_if_set && flag_is_set) || (!branch_if_set && !flag_is_set)) {
@@ -604,12 +637,17 @@ void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_
 
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode) {
   puts("Comparing;");
-  bool suc;
+  bool suc = true;
   bool is_address = true;
-  word_t value = cpu_resolve_first_operand(self, mode, &suc, &is_address);
+  word_t value = cpu_resolve_first_operand(self, mode, &is_address);
 
   if (is_address) {
     value = memory_read(memory, value, &suc);
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
   }
 
   const byte_t result = (byte_t)(register_value - (byte_t)value);
@@ -627,8 +665,14 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   bool suc;
 
-  const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
+  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+
   const byte_t value = DEC(memory_read(memory, address, &suc));
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
 
   cpu_update_flags_when_loading_register(self, value);
 
@@ -643,8 +687,14 @@ void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   bool suc;
 
-  const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
+  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+
   const byte_t value = memory_read(memory, address, &suc);
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
 
   const byte_t result = self->reg_A & value;
 

@@ -28,7 +28,14 @@ int main(const int argc, const char **argv) {
   file_content_free(&file_content);
 
   for (;;) {
-    cpu_do_cycle(&cpu, &memory);
+    const trap_e cycle_result = cpu_do_cycle(&cpu, &memory);
+
+    if (cycle_result != OK) {
+      puts("TRAP");
+      printf("Number: %d", cycle_result);
+      break;
+    }
+
     for (int i = 0; i < 10000000; i++);
   }
 

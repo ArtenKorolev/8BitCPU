@@ -116,20 +116,29 @@ typedef enum {
   WRITEBACK,
 } cpu_state_e;
 
+typedef enum {
+  OK = 0,
+  ILLEGAL_OPCODE,
+  SEGMENTATION_FAULT,  // write/read errors
+  STACK_OVERFLOW,
+  STACK_UNDERFLOW,
+} trap_e;
+
 #define OPERANDS_BUFFER_SIZE 8
 
 typedef struct {
   byte_t reg_A, reg_X, reg_Y, reg_P;
   byte_t reg_SP;
   word_t reg_IP;
+  opcode_e reg_IR;
 
   byte_t remaining_bytes;
   byte_t operands_buffer[OPERANDS_BUFFER_SIZE];
   byte_t operands_buffer_index;
   cpu_state_e state;
-  opcode_e reg_IR;
+  trap_e last_trap;
 } cpu_t;
 
 void cpu_init(cpu_t *self);
-void cpu_do_cycle(cpu_t *self, memory_t *memory);
+trap_e cpu_do_cycle(cpu_t *self, memory_t *memory);
 void cpu_dump(const cpu_t *self, FILE *stream);
