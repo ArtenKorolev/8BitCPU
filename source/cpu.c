@@ -663,7 +663,7 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
 #define DEC(x) ((x) - 1)
 
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
-  bool suc;
+  bool suc = true;
 
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
 
