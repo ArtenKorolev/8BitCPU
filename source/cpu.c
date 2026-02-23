@@ -34,21 +34,21 @@ void cpu_set_remaining_bytes(cpu_t *self);
 void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value);
 
 // new
-void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_t mode,
+void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_e mode,
                           const memory_t *memory);
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
-                        addressing_mode_t mode);
-void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
-void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_t mode);
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, bool *suc,
+                        addressing_mode_e mode);
+void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
+void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *suc,
                                  bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
-void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode);
-void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
+void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode);
+void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
-void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_t mode);
+void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -405,7 +405,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   }
 }
 
-void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_t mode,
+void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_e mode,
                           const memory_t *memory) {
   puts("Load to register;");
   bool suc = true;
@@ -427,7 +427,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
   *register_ptr = value;
 }
 
-void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
+void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_e mode) {
   puts("Logical AND with accumulator;");
   bool suc = true;
   bool is_address = true;
@@ -446,7 +446,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
 }
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
-                        const addressing_mode_t mode) {
+                        const addressing_mode_e mode) {
   puts("Store register;");
   bool suc = true;
 
@@ -454,7 +454,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
   memory_write(memory, address, register_value);
 }
 
-void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_t mode) {
+void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_e mode) {
   puts("Add to accumulator;");
   bool suc = true;
   bool is_address = true;
@@ -478,7 +478,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   cpu_update_flags_when_loading_register(self, self->reg_A);
 }
 
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_t mode, bool *suc,
+word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *suc,
                                  bool *return_value_is_address) {
   word_t value = 0;
 
@@ -602,7 +602,7 @@ void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_
   }
 }
 
-void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_t mode) {
+void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode) {
   puts("Comparing;");
   bool suc;
   bool is_address = true;
@@ -624,7 +624,7 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
 
 #define DEC(x) ((x) - 1)
 
-void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_t mode) {
+void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   bool suc;
 
   const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);
@@ -640,7 +640,7 @@ void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
   cpu_update_flags_when_loading_register(self, *register_ptr);
 }
 
-void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_t mode) {
+void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   bool suc;
 
   const word_t address = cpu_resolve_first_operand(self, mode, &suc, NULL);

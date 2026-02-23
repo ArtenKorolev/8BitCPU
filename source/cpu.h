@@ -106,7 +106,7 @@ typedef enum {
   INDERECT,
   INDEXED_INDERECT,
   INDERECT_INDEXED,
-} addressing_mode_t;
+} addressing_mode_e;
 
 typedef enum {
   FETCH,
