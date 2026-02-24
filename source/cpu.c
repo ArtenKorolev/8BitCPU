@@ -15,6 +15,7 @@ void cpu_init(cpu_t *self) {
   self->reg_IP = 0;
   self->reg_SP = 0xFF;
   self->reg_A = self->reg_X = self->reg_Y = 0;
+  self->reg_P = 0;
 
   cpu_reset_operands_buffer(self);
   self->state = FETCH;
@@ -28,11 +29,10 @@ void cpu_reset_operands_buffer(cpu_t *self) {
 
 // private cpu functions
 void cpu_exec(cpu_t *self, memory_t *memory);
-void cpu_add_immediate_to_register_A(cpu_t *self);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
-void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value);
+void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value);
 
 // new
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_e mode,
@@ -52,13 +52,13 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
-#define CARRY_MASK 0x1
-#define ZERO_MASK 0x2
-#define INTERRUPT_MASK 0x4
-#define DECIMAL_MASK 0x8
-#define BREAK_MASK 0x10
-#define OVERFLOW_MASK 0x40
-#define NEGATIVE_MASK 0x80
+#define CARRY_MASK 0b00000001
+#define ZERO_MASK 0x00000010
+#define INTERRUPT_MASK 0b00000100
+#define DECIMAL_MASK 0b00001000
+#define BREAK_MASK 0b00010000
+#define OVERFLOW_MASK 0b01000000
+#define NEGATIVE_MASK 0b10000000
 
 // status register utils
 bool cpu_status_flag_is_set(const cpu_t *self, const byte_t mask) {
@@ -86,13 +86,12 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
         break;
       }
 
-      self->state = FETCH_OPERAND;
-      cpu_set_remaining_bytes(self);
+      self->state = DECODE;
 
       break;
     case FETCH_OPERAND:
       if (self->remaining_bytes == 0) {
-        self->state = DECODE;
+        self->state = EXECUTE;
         break;
       }
 
@@ -106,7 +105,9 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
       --self->remaining_bytes;
       break;
     case DECODE:
-      self->state = EXECUTE;
+      cpu_set_remaining_bytes(self);
+      self->state = FETCH_OPERAND;
+      break;
     case EXECUTE:
       cpu_exec(self, memory);
       self->state = WRITEBACK;
@@ -125,12 +126,6 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   byte_t bytes = 0;
 
   switch (self->reg_IR) {
-    case DEX_OPCOD:
-    case DEY_OPCOD:
-    case CLC_OPCOD:
-    case CLD_OPCOD:
-    case CLI_OPCOD:
-    case CLV_OPCOD:
     case LDAI_OPCOD:
     case LDXI_OPCOD:
     case LDYI_OPCOD:
@@ -195,6 +190,12 @@ void cpu_set_remaining_bytes(cpu_t *self) {
       bytes = 2;
       break;
     case NOP_OPCOD:
+    case DEX_OPCOD:
+    case DEY_OPCOD:
+    case CLC_OPCOD:
+    case CLD_OPCOD:
+    case CLI_OPCOD:
+    case CLV_OPCOD:
     case RTS_OPCOD:
       break;
   }
@@ -431,7 +432,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
     return;
   }
 
-  cpu_update_flags_when_loading_register(self, value);
+  cpu_update_zero_and_negative_flags(self, value);
   *register_ptr = value;
 }
 
@@ -457,7 +458,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
 
   self->reg_A &= value;
 
-  cpu_update_flags_when_loading_register(self, self->reg_A);
+  cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
@@ -473,7 +474,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   puts("Add to accumulator;");
   bool suc = true;
   bool is_address = true;
-  byte_t value = cpu_resolve_first_operand(self, mode, &is_address);
+  word_t value = cpu_resolve_first_operand(self, mode, &is_address);
 
   if (is_address) {
     value = memory_read(memory, value, &suc);
@@ -495,7 +496,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
 
   self->reg_A = (byte_t)result;
   cpu_dump(self, stdout);
-  cpu_update_flags_when_loading_register(self, self->reg_A);
+  cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
 word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address) {
@@ -540,7 +541,7 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode
   return value;
 }
 
-void cpu_update_flags_when_loading_register(cpu_t *self, const byte_t new_reg_value) {
+void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value) {
   if (new_reg_value == 0) {
     cpu_status_flag_set(self, ZERO_MASK);
   } else {
@@ -651,7 +652,7 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
   }
 
   const byte_t result = (byte_t)(register_value - (byte_t)value);
-  cpu_update_flags_when_loading_register(self, result);
+  cpu_update_zero_and_negative_flags(self, result);
 
   if (register_value >= value) {
     cpu_status_flag_set(self, CARRY_MASK);
@@ -674,18 +675,18 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
     return;
   }
 
-  cpu_update_flags_when_loading_register(self, value);
+  cpu_update_zero_and_negative_flags(self, value);
 
   memory_write(memory, address, value);
 }
 
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
   --(*register_ptr);
-  cpu_update_flags_when_loading_register(self, *register_ptr);
+  cpu_update_zero_and_negative_flags(self, *register_ptr);
 }
 
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
-  bool suc;
+  bool suc = true;
 
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
 
