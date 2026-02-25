@@ -169,6 +169,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CPXZ_OPCOD:
     case INCZ_OPCOD:
     case INCZX_OPCOD:
+    case ADDZ_OPCOD:
+    case ADDZX_OPCOD:
       bytes = 1;
       break;
     case DECA_OPCOD:
@@ -196,6 +198,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CPXA_OPCOD:
     case BITA_OPCOD:
     case CPYA_OPCOD:
+    case ADDA_OPCOD:
+    case ADDAY_OPCOD:
+    case ADDAX_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
@@ -287,6 +292,21 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case LDXZ_OPCOD:
       cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE, memory);
+      break;
+    case ADDZ_OPCOD:
+      cpu_add_to_accumulator(self, memory, ZERO_PAGE);
+      break;
+    case ADDZX_OPCOD:
+      cpu_add_to_accumulator(self, memory, ZERO_PAGE_X);
+      break;
+    case ADDAX_OPCOD:
+      cpu_add_to_accumulator(self, memory, ABSOLUTE_X);
+      break;
+    case ADDAY_OPCOD:
+      cpu_add_to_accumulator(self, memory, ABSOLUTE_Y);
+      break;
+    case ADDA_OPCOD:
+      cpu_add_to_accumulator(self, memory, ABSOLUTE);
       break;
     case LDXZY_OPCOD:
       cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE_Y, memory);
@@ -446,6 +466,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     default:
       self->last_trap = ILLEGAL_OPCODE;
+      cpu_dump(self, stdout);
   }
 }
 

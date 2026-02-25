@@ -52,6 +52,11 @@ typedef enum {
   RTS_OPCOD = 0x60,  // return from subroutine
 
   ADDI_OPCOD = 0x69,  // add an immediate to A register
+  ADDZ_OPCOD = 0x65,
+  ADDZX_OPCOD = 0x75,
+  ADDA_OPCOD = 0x6D,
+  ADDAX_OPCOD = 0x7D,
+  ADDAY_OPCOD = 0x79,
 
   JMPA_OPCOD = 0x4C,  // jump to an address
 
