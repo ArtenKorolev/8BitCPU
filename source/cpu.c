@@ -9,32 +9,14 @@
 
 #define STACK_LOWEST_ADDRESS 0x0100
 
-void cpu_reset_operands_buffer(cpu_t *self);
-
-void cpu_init(cpu_t *self) {
-  self->reg_IP = 0;
-  self->reg_SP = 0xFF;
-  self->reg_A = self->reg_X = self->reg_Y = 0;
-  self->reg_P = 0;
-
-  cpu_reset_operands_buffer(self);
-  self->state = FETCH;
-  self->last_trap = OK;
-}
-
-void cpu_reset_operands_buffer(cpu_t *self) {
-  memset(self->operands_buffer, 0, OPERANDS_BUFFER_SIZE);
-  self->operands_buffer_index = 0;
-}
-
 // private cpu functions
+void cpu_reset_operands_buffer(cpu_t *self);
+word_t read_reset_vector(const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
 void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value);
-
-// new
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_e mode,
                           const memory_t *memory);
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
@@ -61,6 +43,30 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 #define BREAK_MASK 0b00010000
 #define OVERFLOW_MASK 0b01000000
 #define NEGATIVE_MASK 0b10000000
+
+void cpu_init(cpu_t *self, const memory_t *memory) {
+  self->reg_IP = read_reset_vector(memory);
+  self->reg_SP = 0xFF;
+  self->reg_A = self->reg_X = self->reg_Y = 0;
+  self->reg_P = 0;
+
+  cpu_reset_operands_buffer(self);
+  self->state = FETCH;
+  self->last_trap = OK;
+}
+
+#define RESET_VECTOR_LOW 0xFFFC
+#define RESET_VECTOR_HIGH 0xFFFD
+
+word_t read_reset_vector(const memory_t *memory) {
+  bool suc;
+  return MAKE_WORD(memory_read(memory, RESET_VECTOR_HIGH, &suc), memory_read(memory, RESET_VECTOR_LOW, &suc));
+}
+
+void cpu_reset_operands_buffer(cpu_t *self) {
+  memset(self->operands_buffer, 0, OPERANDS_BUFFER_SIZE);
+  self->operands_buffer_index = 0;
+}
 
 // status register utils
 bool cpu_status_flag_is_set(const cpu_t *self, const byte_t mask) {

@@ -156,6 +156,6 @@ typedef struct {
   trap_e last_trap;
 } cpu_t;
 
-void cpu_init(cpu_t *self);
+void cpu_init(cpu_t *self, const memory_t *memory);
 trap_e cpu_do_cycle(cpu_t *self, memory_t *memory);
 void cpu_dump(const cpu_t *self, FILE *stream);

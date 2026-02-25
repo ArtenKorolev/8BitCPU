@@ -7,11 +7,11 @@
 #include "memory.h"
 
 int main(const int argc, const char **argv) {
-  cpu_t cpu;
-  cpu_init(&cpu);
-
   memory_t memory;
   memory_init(&memory);
+
+  cpu_t cpu;
+  cpu_init(&cpu, &memory);
 
   file_content_t file_content = read_bin_file("mem.bin");
 
