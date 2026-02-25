@@ -17,8 +17,10 @@ void memory_init(memory_t *self) {
   }
 }
 
+#define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
+
 byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
-  if (address > self->memory_size || address < 0) {
+  if ((address > self->memory_size || address < 0) || IS_INVALID_MEMORY(self)) {
     *success = false;
     return 0;
   }
@@ -27,8 +29,6 @@ byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
 
   return self->memory[address];
 }
-
-#define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
 
 void memory_write(memory_t *self, word_t address, const byte_t value) {
   if (IS_INVALID_MEMORY(self)) {
