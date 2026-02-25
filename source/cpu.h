@@ -99,6 +99,10 @@ typedef enum {
 
   INX_OPCOD = 0xE8,
   INY_OPCOD = 0xC8,
+
+  SEC_OPCOD = 0x38,
+  SED_OPDCOD = 0xF8,
+  SEI_OPCOD = 0x78,
 } opcode_e;
 
 typedef enum {

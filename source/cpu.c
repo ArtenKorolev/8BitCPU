@@ -129,6 +129,9 @@ void cpu_set_remaining_bytes(cpu_t *self) {
 
   switch (self->reg_IR) {
     case LDAI_OPCOD:
+    case SEC_OPCOD:
+    case SEI_OPCOD:
+    case SED_OPDCOD:
     case LDXI_OPCOD:
     case LDYI_OPCOD:
     case ADDI_OPCOD:
@@ -398,6 +401,15 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case BMI_OPCOD:
       cpu_branch_based_on_flag(self, NEGATIVE_MASK, true);
+      break;
+    case SEI_OPCOD:
+      cpu_status_flag_set(self, INTERRUPT_MASK);
+      break;
+    case SED_OPDCOD:
+      cpu_status_flag_set(self, DECIMAL_MASK);
+      break;
+    case SEC_OPCOD:
+      cpu_status_flag_set(self, CARRY_MASK);
       break;
     case BVC_OPCOD:
       cpu_branch_based_on_flag(self, OVERFLOW_MASK, false);
