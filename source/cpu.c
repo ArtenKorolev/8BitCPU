@@ -47,7 +47,9 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode);
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
+void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
+void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
@@ -162,10 +164,14 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CPYZ_OPCOD:
     case CPXI_OPCOD:
     case CPXZ_OPCOD:
+    case INCZ_OPCOD:
+    case INCZX_OPCOD:
       bytes = 1;
       break;
     case DECA_OPCOD:
     case DECAX_OPCOD:
+    case INCA_OPCOD:
+    case INCAX_OPCOD:
     case JMPA_OPCOD:
     case LDAA_OPCOD:
     case LDAAX_OPCOD:
@@ -197,6 +203,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CLI_OPCOD:
     case CLV_OPCOD:
     case RTS_OPCOD:
+    case INY_OPCOD:
+    case INX_OPCOD:
       break;
   }
 
@@ -207,6 +215,24 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       puts("No operation;");
+      break;
+    case INY_OPCOD:
+      cpu_increment_register(self, &self->reg_Y);
+      break;
+    case INX_OPCOD:
+      cpu_increment_register(self, &self->reg_X);
+      break;
+    case INCAX_OPCOD:
+      cpu_increment_memory(self, memory, ABSOLUTE_X);
+      break;
+    case INCA_OPCOD:
+      cpu_increment_memory(self, memory, ABSOLUTE);
+      break;
+    case INCZ_OPCOD:
+      cpu_increment_memory(self, memory, ZERO_PAGE);
+      break;
+    case INCZX_OPCOD:
+      cpu_increment_memory(self, memory, ZERO_PAGE_X);
       break;
     case BITA_OPCOD:
       cpu_test_bit(self, memory, ABSOLUTE);
@@ -683,6 +709,27 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
   --(*register_ptr);
   cpu_update_zero_and_negative_flags(self, *register_ptr);
+}
+
+void cpu_increment_register(cpu_t *self, byte_t *register_ptr) {
+  ++(*register_ptr);
+  cpu_update_zero_and_negative_flags(self, *register_ptr);
+}
+
+void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+
+  bool suc = true;
+  const byte_t value = memory_read(memory, address, &suc) + 1;
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
+  cpu_update_zero_and_negative_flags(self, value + 1);
+
+  memory_write(memory, address, value);
 }
 
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {

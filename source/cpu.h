@@ -91,6 +91,14 @@ typedef enum {
 
   BITZ_OPCOD = 0x24,
   BITA_OPCOD = 0x2c,
+
+  INCZ_OPCOD = 0xE6,
+  INCZX_OPCOD = 0xF6,
+  INCA_OPCOD = 0xEE,
+  INCAX_OPCOD = 0xFE,
+
+  INX_OPCOD = 0xE8,
+  INY_OPCOD = 0xC8,
 } opcode_e;
 
 typedef enum {
