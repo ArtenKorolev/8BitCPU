@@ -1,5 +1,6 @@
 #include "memory.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,11 +28,21 @@ byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
 
   *success = true;
 
+  if (address == INPUT_PORT) {
+    return getchar();
+  }
+
   return self->memory[address];
 }
 
-void memory_write(memory_t *self, word_t address, const byte_t value) {
+void memory_write(memory_t *self, const word_t address, const byte_t value) {
   if (IS_INVALID_MEMORY(self)) {
+    return;
+  }
+
+  if (address == OUTPUT_PORT) {  // memory mapped port
+    putchar(value);
+    fflush(stdout);
     return;
   }
 

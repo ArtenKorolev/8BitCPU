@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "base.h"
 #include "cpu.h"
@@ -36,7 +37,7 @@ int main(const int argc, const char **argv) {
       break;
     }
 
-    for (int i = 0; i < 10000000; i++);
+    for (int i = 0; i < 100000000; ++i);
   }
 
   memory_free(&memory);

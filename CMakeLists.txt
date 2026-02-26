@@ -3,6 +3,6 @@ project(emu8)
 
 file(GLOB C_SRC "source/*.c")
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-Wall -Wextra -Wpedantic -O0)
 
 add_executable(${PROJECT_NAME} ${C_SRC})
