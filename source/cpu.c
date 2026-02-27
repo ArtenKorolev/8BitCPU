@@ -5,13 +5,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log.h"
 #include "memory.h"
 
 #define STACK_LOWEST_ADDRESS 0x0100
 
 // private cpu functions
 void cpu_reset_operands_buffer(cpu_t *self);
-word_t read_reset_vector(const memory_t *memory);
+word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
@@ -34,8 +35,6 @@ void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
 void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 
-#define LOG 0
-
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
 #define CARRY_MASK 0b00000001
@@ -49,7 +48,7 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
 #define PROCESSOR_STATUS_INIT_VALUE 0b00100000
 
 void cpu_init(cpu_t *self, const memory_t *memory) {
-  self->reg_IP = read_reset_vector(memory);
+  self->reg_IP = cpu_read_reset_vector(self, memory);
   self->reg_SP = 0xFF;
   self->reg_A = self->reg_X = self->reg_Y = 0;
   self->reg_P = PROCESSOR_STATUS_INIT_VALUE;
@@ -62,9 +61,20 @@ void cpu_init(cpu_t *self, const memory_t *memory) {
 #define RESET_VECTOR_LOW 0xFFFC
 #define RESET_VECTOR_HIGH 0xFFFD
 
-word_t read_reset_vector(const memory_t *memory) {
-  bool suc;
-  return MAKE_WORD(memory_read(memory, RESET_VECTOR_HIGH, &suc), memory_read(memory, RESET_VECTOR_LOW, &suc));
+word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory) {
+  bool suc = true;
+
+  const word_t address =
+      MAKE_WORD(memory_read(memory, RESET_VECTOR_HIGH, &suc), memory_read(memory, RESET_VECTOR_LOW, &suc));
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return 0;
+  }
+
+  emu_log(INFO, "Reset vector: %x\n", address);
+
+  return address;
 }
 
 void cpu_reset_operands_buffer(cpu_t *self) {
@@ -104,6 +114,11 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
     case FETCH_OPERAND:
       if (self->remaining_bytes == 0) {
         self->state = EXECUTE;
+        break;
+      }
+
+      if (self->operands_buffer_index == OPERANDS_BUFFER_SIZE) {
+        self->last_trap = SEGMENTATION_FAULT;
         break;
       }
 
@@ -232,10 +247,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
 void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
-      if (LOG) {
-        puts("No operation;");
-      }
-
+      emu_log(INFO, "No operation;\n");
       break;
     case INY_OPCOD:
       cpu_increment_register(self, &self->reg_Y);
@@ -479,15 +491,13 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     default:
       self->last_trap = ILLEGAL_OPCODE;
-      cpu_dump(self, stdout);
+      emu_log(ERROR, "Illegal opcode: %x;\n", self->reg_IR);
   }
 }
 
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_e mode,
                           const memory_t *memory) {
-  if (LOG) {
-    puts("Load to register;");
-  }
+  emu_log(INFO, "Load to register;\n");
   bool suc = true;
   bool is_address = true;
 
@@ -511,9 +521,7 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
 }
 
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_e mode) {
-  if (LOG) {
-    puts("Logical AND with accumulator;");
-  }
+  emu_log(INFO, "Logical AND with accumulator;\n");
   bool suc = true;
   bool is_address = true;
 
@@ -539,9 +547,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
 
 void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
                         const addressing_mode_e mode) {
-  if (LOG) {
-    puts("Store register;");
-  }
+  emu_log(INFO, "Store register;\n");
 
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
 
@@ -549,9 +555,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
 }
 
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressing_mode_e mode) {
-  if (LOG) {
-    puts("Add to accumulator;");
-  }
+  emu_log(INFO, "Add to accumulator;\n");
 
   bool suc = true;
   bool is_address = true;
@@ -637,12 +641,10 @@ void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value)
 }
 
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value) {
-  if (LOG) {
-    puts("Pushing onto the stack;");
-  }
+  emu_log(INFO, "Pushing onto the stack;\n");
 
   if (self->reg_SP == 0) {
-    puts("Error: stack overflow");
+    emu_log(ERROR, "Stack underflow;\n");
     self->last_trap = STACK_OVERFLOW;
     return;
   }
@@ -651,14 +653,12 @@ void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value
 }
 
 byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
-  if (LOG) {
-    puts("Pulling from the stack;");
-  }
+  emu_log(INFO, "Pulling from the stack;\n");
 
   bool suc = true;
 
   if (self->reg_SP == 0xFF) {
-    puts("Error: stack underflow");
+    emu_log(ERROR, "Stack underflow;\n");
     self->last_trap = STACK_UNDERFLOW;
     return 0;
   }
@@ -674,9 +674,7 @@ byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
 }
 
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
-  if (LOG) {
-    puts("Jumping to subroutine;");
-  }
+  emu_log(INFO, "Jumping to subroutine;\n");
 
   const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
 
@@ -690,9 +688,7 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
 }
 
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
-  if (LOG) {
-    puts("Return from subroutine;");
-  }
+  emu_log(INFO, "Return from subroutine;\n");
 
   word_t address = cpu_pull_from_stack(self, memory);
   address += (cpu_pull_from_stack(self, memory) << 8);
@@ -700,9 +696,7 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
 }
 
 void cpu_jump(cpu_t *self) {
-  if (LOG) {
-    puts("Jump;");
-  }
+  emu_log(INFO, "Jump;\n");
 
   const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
 
@@ -714,9 +708,7 @@ byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
 }
 
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set) {
-  if (LOG) {
-    puts("Branching;");
-  }
+  emu_log(INFO, "Branching;\n");
 
   bool suc = true;
 
@@ -730,14 +722,15 @@ void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_
   const bool flag_is_set = cpu_status_flag_is_set(self, mask);
 
   if ((branch_if_set && flag_is_set) || (!branch_if_set && !flag_is_set)) {
+    emu_log(INFO, "Condition is satisfied, jump;\n");
     self->reg_IP += (int8_t)offset;
+  } else {
+    emu_log(INFO, "Condition is not satisfied;\n");
   }
 }
 
 void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode) {
-  if (LOG) {
-    puts("Comparing;");
-  }
+  emu_log(INFO, "Comparing;\n");
 
   bool suc = true;
   bool is_address = true;
@@ -762,14 +755,16 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
   }
 }
 
-#define DEC(x) ((x) - 1)
-
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  emu_log(INFO, "Decrement memory;\n");
+
   bool suc = true;
 
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
 
-  const byte_t value = DEC(memory_read(memory, address, &suc));
+  emu_log(INFO, "Decrementing address: %x\n", address);
+
+  const byte_t value = memory_read(memory, address, &suc) - 1;
 
   if (!suc) {
     self->last_trap = SEGMENTATION_FAULT;
@@ -782,17 +777,23 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
 }
 
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr) {
+  emu_log(INFO, "Decrement register;\n");
   --(*register_ptr);
   cpu_update_zero_and_negative_flags(self, *register_ptr);
 }
 
 void cpu_increment_register(cpu_t *self, byte_t *register_ptr) {
+  emu_log(INFO, "Increment register;\n");
   ++(*register_ptr);
   cpu_update_zero_and_negative_flags(self, *register_ptr);
 }
 
 void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  emu_log(INFO, "Increment memory;\n");
+
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+
+  emu_log(INFO, "Incrementing address: %x\n", address);
 
   bool suc = true;
   const byte_t value = memory_read(memory, address, &suc) + 1;
@@ -808,6 +809,8 @@ void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
 }
 
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  emu_log(INFO, "Test bit;\n");
+
   bool suc = true;
 
   const word_t address = cpu_resolve_first_operand(self, mode, NULL);
@@ -849,6 +852,13 @@ void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t ma
 }
 
 void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
+  switch (g_log_level) {
+    case NO_LOG:
+    case ERROR:
+    case WARN:
+      return;
+  }
+
   cpu_dump_one_flag(self, "Carry", CARRY_MASK, stream);
   cpu_dump_one_flag(self, "Zero", ZERO_MASK, stream);
   cpu_dump_one_flag(self, "Interrupt", INTERRUPT_MASK, stream);
@@ -859,8 +869,11 @@ void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
 }
 
 void cpu_dump(const cpu_t *self, FILE *stream) {
-  if (!LOG) {
-    return;
+  switch (g_log_level) {
+    case NO_LOG:
+    case ERROR:
+    case WARN:
+      return;
   }
 
   fputs("======= Dumping CPU =======\n", stream);

@@ -5,9 +5,10 @@
 #include <string.h>
 
 #include "base.h"
+#include "log.h"
 
 void memory_init(memory_t *self) {
-  byte_t *new_memory = (byte_t *)malloc(1 * MEMORY_SIZE);
+  byte_t *new_memory = (byte_t *)malloc(MEMORY_SIZE);
 
   if (new_memory == NULL) {
     self->memory = NULL;
@@ -29,6 +30,7 @@ byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
   *success = true;
 
   if (address == INPUT_PORT) {
+    emu_log(INFO, "Trying to read an input port, call getchar();");
     return getchar();
   }
 
@@ -41,6 +43,7 @@ void memory_write(memory_t *self, const word_t address, const byte_t value) {
   }
 
   if (address == OUTPUT_PORT) {  // memory mapped port
+    emu_log(INFO, "Trying to write to output port, call putchar();");
     putchar(value);
     fflush(stdout);
     return;

@@ -5,7 +5,19 @@
 #include "base.h"
 #include "cpu.h"
 #include "file_io.h"
+#include "log.h"
 #include "memory.h"
+
+#define LOG_INFO_FLAG "-linfo"
+#define LOG_INFO_FLAG_LEN 6
+
+#define LOG_WARN_FLAG "-lwarn"
+#define LOG_WARN_FLAG_LEN 6
+
+#define LOG_ERROR_FLAG "-lerr"
+#define LOG_ERROR_FLAG_LEN 5
+
+log_level_e g_log_level = NO_LOG;
 
 int main(const int argc, const char **argv) {
   memory_t memory;
@@ -20,6 +32,16 @@ int main(const int argc, const char **argv) {
     puts("Zero bytes read");
   }
 
+  for (int i = 0; i < argc; ++i) {
+    if (strncmp(argv[i], LOG_INFO_FLAG, LOG_INFO_FLAG_LEN) == 0) {
+      g_log_level = INFO;
+    } else if (strncmp(argv[i], LOG_WARN_FLAG, LOG_WARN_FLAG_LEN) == 0) {
+      g_log_level = WARN;
+    } else if (strncmp(argv[i], LOG_ERROR_FLAG, LOG_ERROR_FLAG_LEN) == 0) {
+      g_log_level = ERROR;
+    }
+  }
+
   if (file_content.size > MEMORY_SIZE) {
     memcpy(memory.memory, file_content.data, MEMORY_SIZE);
   } else {
@@ -32,8 +54,7 @@ int main(const int argc, const char **argv) {
     const trap_e cycle_result = cpu_do_cycle(&cpu, &memory);
 
     if (cycle_result != OK) {
-      puts("TRAP");
-      printf("Number: %d", cycle_result);
+      emu_log(ERROR, "!TRAP!\nTrap number: %d\n", cycle_result);
       break;
     }
 
