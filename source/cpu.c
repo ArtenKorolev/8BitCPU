@@ -34,6 +34,7 @@ void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
 void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
 void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
+void cpu_transfer_registers(cpu_t *self, byte_t *first_reg, byte_t *second_reg);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
@@ -238,6 +239,12 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case RTS_OPCOD:
     case INY_OPCOD:
     case INX_OPCOD:
+    case TXA_OPCOD:
+    case TAX_OPCOD:
+    case TAY_OPCOD:
+    case TYA_OPCOD:
+    case TXS_OPCOD:
+    case TSX_OPCOD:
       break;
   }
 
@@ -248,6 +255,24 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case TAY_OPCOD:
+      cpu_transfer_registers(self, &self->reg_A, &self->reg_Y);
+      break;
+    case TAX_OPCOD:
+      cpu_transfer_registers(self, &self->reg_A, &self->reg_X);
+      break;
+    case TSX_OPCOD:
+      cpu_transfer_registers(self, &self->reg_SP, &self->reg_X);
+      break;
+    case TXS_OPCOD:
+      cpu_transfer_registers(self, &self->reg_X, &self->reg_SP);
+      break;
+    case TXA_OPCOD:
+      cpu_transfer_registers(self, &self->reg_X, &self->reg_A);
+      break;
+    case TYA_OPCOD:
+      cpu_transfer_registers(self, &self->reg_Y, &self->reg_A);
       break;
     case INY_OPCOD:
       cpu_increment_register(self, &self->reg_Y);
@@ -841,6 +866,17 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   } else {
     cpu_status_flag_clear(self, OVERFLOW_MASK);
   }
+}
+
+void cpu_transfer_registers(cpu_t *self, byte_t *from, byte_t *to) {
+  emu_log(INFO, "Transfering registers;");
+
+  if (from == NULL || to == NULL) {
+    return;
+  }
+
+  *to = *from;
+  cpu_update_zero_and_negative_flags(self, *to);
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {

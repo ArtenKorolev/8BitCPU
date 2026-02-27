@@ -108,6 +108,13 @@ typedef enum {
   SEC_OPCOD = 0x38,
   SED_OPDCOD = 0xF8,
   SEI_OPCOD = 0x78,
+
+  TAX_OPCOD = 0xAA,
+  TAY_OPCOD = 0xA8,
+  TXA_OPCOD = 0x8A,
+  TYA_OPCOD = 0x98,
+  TSX_OPCOD = 0xBA,
+  TXS_OPCOD = 0x9A,
 } opcode_e;
 
 typedef enum {
