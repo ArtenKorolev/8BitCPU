@@ -46,13 +46,13 @@ void cpu_transfer_registers(cpu_t *self, byte_t *first_reg, byte_t *second_reg);
 #define OVERFLOW_MASK 0b01000000
 #define NEGATIVE_MASK 0b10000000
 
-#define PROCESSOR_STATUS_INIT_VALUE 0b00100000
+#define EMPTY_STATUS 0b00100000
 
 void cpu_init(cpu_t *self, const memory_t *memory) {
   self->reg_IP = cpu_read_reset_vector(self, memory);
   self->reg_SP = 0xFF;
   self->reg_A = self->reg_X = self->reg_Y = 0;
-  self->reg_P = PROCESSOR_STATUS_INIT_VALUE;
+  self->reg_P = EMPTY_STATUS;
 
   cpu_reset_operands_buffer(self);
   self->state = FETCH;
