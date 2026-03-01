@@ -14,7 +14,7 @@
 void cpu_reset_operands_buffer(cpu_t *self);
 word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
-byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
+byte_t cpu_fetch(cpu_t *self, const memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
 void cpu_update_zero_and_negative_flags(cpu_t *self, byte_t new_reg_value);
@@ -24,7 +24,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 word_t cpu_resolve_first_operand(const cpu_t *self, addressing_mode_e mode, bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
-void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
+void cpu_return_from_subroutine(cpu_t *self, const memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, byte_t mask, bool branch_if_set);
 void cpu_compare(cpu_t *self, const memory_t *memory, byte_t register_value, addressing_mode_e mode);
 void cpu_decrement_memory(cpu_t *self, memory_t *memory, addressing_mode_e mode);
@@ -709,7 +709,7 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   self->reg_IP = jumping_address;
 }
 
-void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
+void cpu_return_from_subroutine(cpu_t *self, const memory_t *memory) {
   emu_log(INFO, "Return from subroutine;\n");
 
   word_t address = cpu_pull_from_stack(self, memory);
@@ -725,7 +725,7 @@ void cpu_jump(cpu_t *self) {
   self->reg_IP = address;
 }
 
-byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
+byte_t cpu_fetch(cpu_t *self, const memory_t *memory, bool *success) {
   return memory_read(memory, self->reg_IP++, success);
 }
 
@@ -859,7 +859,7 @@ void cpu_test_bit(cpu_t *self, const memory_t *memory, const addressing_mode_e m
 }
 
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
-  emu_log(INFO, "Transfering registers;");
+  emu_log(INFO, "Transferring registers;");
 
   if (from == NULL || to == NULL) {
     return;
