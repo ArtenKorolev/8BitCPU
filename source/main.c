@@ -39,9 +39,6 @@ int main(const int argc, const char **argv) {
   memory_t memory;
   memory_init_apple2(&memory);
 
-  cpu_t cpu;
-  cpu_init(&cpu, &memory);
-
   file_content_t file_content = read_bin_file("mem.bin");
 
   if (file_content.size == 0) {
@@ -56,6 +53,9 @@ int main(const int argc, const char **argv) {
   }
 
   file_content_free(&file_content);
+
+  cpu_t cpu;
+  cpu_init(&cpu, &memory);
 
   for (;;) {
     const trap_e cycle_result = cpu_do_cycle(&cpu, &memory);
