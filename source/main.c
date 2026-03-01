@@ -26,6 +26,16 @@ void memory_init_apple2(memory_t *self) {
 }
 
 int main(const int argc, const char **argv) {
+  for (int i = 0; i < argc; ++i) {
+    if (strncmp(argv[i], LOG_INFO_FLAG, LOG_INFO_FLAG_LEN) == 0) {
+      g_log_level = INFO;
+    } else if (strncmp(argv[i], LOG_WARN_FLAG, LOG_WARN_FLAG_LEN) == 0) {
+      g_log_level = WARN;
+    } else if (strncmp(argv[i], LOG_ERROR_FLAG, LOG_ERROR_FLAG_LEN) == 0) {
+      g_log_level = ERROR;
+    }
+  }
+
   memory_t memory;
   memory_init_apple2(&memory);
 
@@ -35,17 +45,8 @@ int main(const int argc, const char **argv) {
   file_content_t file_content = read_bin_file("mem.bin");
 
   if (file_content.size == 0) {
-    puts("Zero bytes read");
-  }
-
-  for (int i = 0; i < argc; ++i) {
-    if (strncmp(argv[i], LOG_INFO_FLAG, LOG_INFO_FLAG_LEN) == 0) {
-      g_log_level = INFO;
-    } else if (strncmp(argv[i], LOG_WARN_FLAG, LOG_WARN_FLAG_LEN) == 0) {
-      g_log_level = WARN;
-    } else if (strncmp(argv[i], LOG_ERROR_FLAG, LOG_ERROR_FLAG_LEN) == 0) {
-      g_log_level = ERROR;
-    }
+    emu_log(ERROR, "Zero bytes of program are read\n");
+    return EXIT_FAILURE;
   }
 
   if (file_content.size > MEMORY_SIZE) {

@@ -17,36 +17,34 @@ void cpu_exec(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
 void cpu_jump(cpu_t *self);
 void cpu_set_remaining_bytes(cpu_t *self);
-void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value);
-void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_e mode,
-                          const memory_t *memory);
-void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
-                        addressing_mode_e mode);
+void cpu_update_zero_and_negative_flags(cpu_t *self, byte_t new_reg_value);
+void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, addressing_mode_e mode, const memory_t *memory);
+void cpu_store_register(const cpu_t *self, byte_t register_value, memory_t *memory, addressing_mode_e mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address);
+word_t cpu_resolve_first_operand(const cpu_t *self, addressing_mode_e mode, bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
-void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
-void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_value, const addressing_mode_e mode);
-void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
-void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
+void cpu_branch_based_on_flag(cpu_t *self, byte_t mask, bool branch_if_set);
+void cpu_compare(cpu_t *self, const memory_t *memory, byte_t register_value, addressing_mode_e mode);
+void cpu_decrement_memory(cpu_t *self, memory_t *memory, addressing_mode_e mode);
+void cpu_increment_memory(cpu_t *self, memory_t *memory, addressing_mode_e mode);
 void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
 void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
-void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode);
-void cpu_transfer_registers(cpu_t *self, byte_t *first_reg, byte_t *second_reg);
+void cpu_test_bit(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
+void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to);
 
 #define MAKE_WORD(a, b) ((a << 8) | (b))
 
-#define CARRY_MASK 0b00000001
-#define ZERO_MASK 0x00000010
-#define INTERRUPT_MASK 0b00000100
-#define DECIMAL_MASK 0b00001000
-#define BREAK_MASK 0b00010000
-#define OVERFLOW_MASK 0b01000000
-#define NEGATIVE_MASK 0b10000000
+#define CARRY_MASK 0x1
+#define ZERO_MASK 0x2
+#define INTERRUPT_MASK 0x4
+#define DECIMAL_MASK 0x8
+#define BREAK_MASK 0x10
+#define OVERFLOW_MASK 0x40
+#define NEGATIVE_MASK 0x80
 
-#define EMPTY_STATUS 0b00100000
+#define EMPTY_STATUS 0x20
 
 void cpu_init(cpu_t *self, const memory_t *memory) {
   self->reg_IP = cpu_read_reset_vector(self, memory);
@@ -317,7 +315,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       cpu_decrement_memory(self, memory, ZERO_PAGE_X);
       break;
     case LDAI_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', IMMEDIATE, memory);
+      cpu_load_to_register(self, &self->reg_A, IMMEDIATE, memory);
       break;
     case CLC_OPCOD:
       cpu_status_flag_clear(self, CARRY_MASK);
@@ -332,16 +330,16 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       cpu_status_flag_clear(self, DECIMAL_MASK);
       break;
     case LDAZ_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', ZERO_PAGE, memory);
+      cpu_load_to_register(self, &self->reg_A, ZERO_PAGE, memory);
       break;
     case LDAA_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', ABSOLUTE, memory);
+      cpu_load_to_register(self, &self->reg_A, ABSOLUTE, memory);
       break;
     case LDAAX_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', ABSOLUTE_X, memory);
+      cpu_load_to_register(self, &self->reg_A, ABSOLUTE_X, memory);
       break;
     case LDXZ_OPCOD:
-      cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE, memory);
+      cpu_load_to_register(self, &self->reg_X, ZERO_PAGE, memory);
       break;
     case ADDZ_OPCOD:
       cpu_add_to_accumulator(self, memory, ZERO_PAGE);
@@ -359,70 +357,70 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       cpu_add_to_accumulator(self, memory, ABSOLUTE);
       break;
     case LDXZY_OPCOD:
-      cpu_load_to_register(self, &self->reg_X, 'X', ZERO_PAGE_Y, memory);
+      cpu_load_to_register(self, &self->reg_X, ZERO_PAGE_Y, memory);
       break;
     case LDXA_OPCOD:
-      cpu_load_to_register(self, &self->reg_X, 'X', ABSOLUTE, memory);
+      cpu_load_to_register(self, &self->reg_X, ABSOLUTE, memory);
       break;
     case LDXAY_OPCOD:
-      cpu_load_to_register(self, &self->reg_X, 'X', ABSOLUTE_Y, memory);
+      cpu_load_to_register(self, &self->reg_X, ABSOLUTE_Y, memory);
       break;
     case LDYZ_OPCOD:
-      cpu_load_to_register(self, &self->reg_Y, 'Y', ZERO_PAGE, memory);
+      cpu_load_to_register(self, &self->reg_Y, ZERO_PAGE, memory);
       break;
     case LDYZX_OPCOD:
-      cpu_load_to_register(self, &self->reg_Y, 'Y', ZERO_PAGE_X, memory);
+      cpu_load_to_register(self, &self->reg_Y, ZERO_PAGE_X, memory);
       break;
     case LDYA_OPCOD:
-      cpu_load_to_register(self, &self->reg_Y, 'Y', ABSOLUTE, memory);
+      cpu_load_to_register(self, &self->reg_Y, ABSOLUTE, memory);
       break;
     case LDYAX_OPCOD:
-      cpu_load_to_register(self, &self->reg_Y, 'Y', ABSOLUTE_X, memory);
+      cpu_load_to_register(self, &self->reg_Y, ABSOLUTE_X, memory);
       break;
     case LDAAY_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', ABSOLUTE_Y, memory);
+      cpu_load_to_register(self, &self->reg_A, ABSOLUTE_Y, memory);
       break;
     case LDAZX_OPCOD:
-      cpu_load_to_register(self, &self->reg_A, 'A', ZERO_PAGE_X, memory);
+      cpu_load_to_register(self, &self->reg_A, ZERO_PAGE_X, memory);
       break;
     case STAZ_OPCOD:
-      cpu_store_register(self, self->reg_A, 'A', memory, ZERO_PAGE);
+      cpu_store_register(self, self->reg_A, memory, ZERO_PAGE);
       break;
     case STAZX_OPCOD:
-      cpu_store_register(self, self->reg_A, 'A', memory, ZERO_PAGE_X);
+      cpu_store_register(self, self->reg_A, memory, ZERO_PAGE_X);
       break;
     case STAA_OPCOD:
-      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE);
+      cpu_store_register(self, self->reg_A, memory, ABSOLUTE);
       break;
     case STAAX_OPCOD:
-      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE_X);
+      cpu_store_register(self, self->reg_A, memory, ABSOLUTE_X);
       break;
     case STAAY_OPCOD:
-      cpu_store_register(self, self->reg_A, 'A', memory, ABSOLUTE_Y);
+      cpu_store_register(self, self->reg_A, memory, ABSOLUTE_Y);
       break;
     case STXA_OPCOD:
-      cpu_store_register(self, self->reg_X, 'X', memory, ABSOLUTE);
+      cpu_store_register(self, self->reg_X, memory, ABSOLUTE);
       break;
     case STXZ_OPCOD:
-      cpu_store_register(self, self->reg_X, 'X', memory, ZERO_PAGE);
+      cpu_store_register(self, self->reg_X, memory, ZERO_PAGE);
       break;
     case STXZY_OPCOD:
-      cpu_store_register(self, self->reg_X, 'X', memory, ZERO_PAGE_Y);
+      cpu_store_register(self, self->reg_X, memory, ZERO_PAGE_Y);
       break;
     case STYA_OPCOD:
-      cpu_store_register(self, self->reg_Y, 'Y', memory, ABSOLUTE);
+      cpu_store_register(self, self->reg_Y, memory, ABSOLUTE);
       break;
     case STYZ_OPCOD:
-      cpu_store_register(self, self->reg_Y, 'Y', memory, ZERO_PAGE);
+      cpu_store_register(self, self->reg_Y, memory, ZERO_PAGE);
       break;
     case STYZX_OPCOD:
-      cpu_store_register(self, self->reg_Y, 'Y', memory, ZERO_PAGE_X);
+      cpu_store_register(self, self->reg_Y, memory, ZERO_PAGE_X);
       break;
     case LDXI_OPCOD:
-      cpu_load_to_register(self, &self->reg_X, 'X', IMMEDIATE, memory);
+      cpu_load_to_register(self, &self->reg_X, IMMEDIATE, memory);
       break;
     case LDYI_OPCOD:
-      cpu_load_to_register(self, &self->reg_Y, 'Y', IMMEDIATE, memory);
+      cpu_load_to_register(self, &self->reg_Y, IMMEDIATE, memory);
       break;
     case ADDI_OPCOD:
       cpu_add_to_accumulator(self, memory, IMMEDIATE);
@@ -520,8 +518,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   }
 }
 
-void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, const addressing_mode_e mode,
-                          const memory_t *memory) {
+void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, const addressing_mode_e mode, const memory_t *memory) {
   emu_log(INFO, "Load to register;\n");
   bool suc = true;
   bool is_address = true;
@@ -570,7 +567,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
   cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
-void cpu_store_register(cpu_t *self, byte_t register_value, const char register_name, memory_t *memory,
+void cpu_store_register(const cpu_t *self, const byte_t register_value, memory_t *memory,
                         const addressing_mode_e mode) {
   emu_log(INFO, "Store register;\n");
 
@@ -677,7 +674,7 @@ void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value
   memory_write(memory, STACK_LOWEST_ADDRESS + self->reg_SP--, value);
 }
 
-byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
+byte_t cpu_pull_from_stack(cpu_t *self, const memory_t *memory) {
   emu_log(INFO, "Pulling from the stack;\n");
 
   bool suc = true;
@@ -735,14 +732,7 @@ byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success) {
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set) {
   emu_log(INFO, "Branching;\n");
 
-  bool suc = true;
-
   const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, NULL);
-
-  if (!suc) {
-    self->last_trap = SEGMENTATION_FAULT;
-    return;
-  }
 
   const bool flag_is_set = cpu_status_flag_is_set(self, mask);
 
@@ -833,7 +823,7 @@ void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
   memory_write(memory, address, value);
 }
 
-void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+void cpu_test_bit(cpu_t *self, const memory_t *memory, const addressing_mode_e mode) {
   emu_log(INFO, "Test bit;\n");
 
   bool suc = true;
@@ -868,7 +858,7 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   }
 }
 
-void cpu_transfer_registers(cpu_t *self, byte_t *from, byte_t *to) {
+void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
   emu_log(INFO, "Transfering registers;");
 
   if (from == NULL || to == NULL) {
@@ -892,7 +882,10 @@ void cpu_dump_processor_status(const cpu_t *self, FILE *stream) {
     case NO_LOG:
     case ERROR:
     case WARN:
+    default:
       return;
+    case INFO:
+      break;
   }
 
   cpu_dump_one_flag(self, "Carry", CARRY_MASK, stream);
@@ -909,7 +902,10 @@ void cpu_dump(const cpu_t *self, FILE *stream) {
     case NO_LOG:
     case ERROR:
     case WARN:
+    default:
       return;
+    case INFO:
+      break;
   }
 
   fputs("======= Dumping CPU =======\n", stream);
