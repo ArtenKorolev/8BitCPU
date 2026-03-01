@@ -34,6 +34,8 @@ byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
     return getchar();
   }
 
+  emu_log(INFO, "Memory read at address %x\n", address);
+
   return self->memory[address];
 }
 
@@ -48,6 +50,8 @@ void memory_write(memory_t *self, const word_t address, const byte_t value) {
     fflush(stdout);
     return;
   }
+
+  emu_log(INFO, "Memory write at address %x, value %dx\n", address, value);
 
   self->memory[address] = value;
 }
