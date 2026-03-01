@@ -19,9 +19,15 @@
 
 log_level_e g_log_level = NO_LOG;
 
+#include "apple2.h"
+
+void memory_init_apple2(memory_t *self) {
+  memory_init(self, apple2_memory_read, apple2_memory_write);
+}
+
 int main(const int argc, const char **argv) {
   memory_t memory;
-  memory_init(&memory);
+  memory_init_apple2(&memory);
 
   cpu_t cpu;
   cpu_init(&cpu, &memory);
