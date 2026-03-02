@@ -8,12 +8,14 @@ file(GLOB C_SRC
     "source/utils/*.c"
 )
 
-add_compile_options(-Wall -Wextra -Wpedantic -O0)
+include_directories(
+    source/core 
+    source/utils
+    source/machine
+    source/machine/apple2
+)
+
+add_compile_options(-Wall -Wextra -Wpedantic -O2)
 
 add_executable(${PROJECT_NAME} ${C_SRC})
 
-target_include_directories(${PROJECT_NAME} PUBLIC 
-    source/core 
-    source/utils
-    source/machine/apple2
-)

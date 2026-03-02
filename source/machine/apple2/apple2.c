@@ -1,9 +1,13 @@
 #include "apple2.h"
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 
 #include "log.h"
+
+#define TEXT_FRAME_BUFFER_START 0x400
+#define TEXT_FRAME_BUFFER_END 0x07FF
 
 #define IO_START 0xC000
 #define IO_END 0xCFFF
@@ -15,6 +19,8 @@
 
 #define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
 
+bool apple2_terminal_should_render = true;
+
 byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *success) {
   if (IS_INVALID_MEMORY(self) || address >= self->memory_size) {
     *success = false;
@@ -25,7 +31,14 @@ byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *succ
 
   if (address == INPUT_PORT) {
     emu_log(INFO, "Reading INPUT_PORT (keyboard), calling getchar()");
-    return getchar();
+
+    int c = getchar();
+
+    while (c == '\n') {
+      c = getchar();
+    }
+
+    return c;
   }
 
   if (address >= ROM_START) {
@@ -47,6 +60,10 @@ void apple2_memory_write(memory_t *self, const word_t address, const byte_t valu
     return;
   }
 
+  if (address >= TEXT_FRAME_BUFFER_START && address <= TEXT_FRAME_BUFFER_END) {
+    apple2_terminal_should_render = true;
+  }
+
   if (address == OUTPUT_PORT) {
     emu_log(INFO, "Writing OUTPUT_PORT (console), value %02X\n", value);
     putchar(value);
@@ -66,4 +83,58 @@ void apple2_memory_write(memory_t *self, const word_t address, const byte_t valu
   }
 
   emu_log(WARN, "Writing unhandled I/O address %04X, value %02X\n", address, value);
+}
+
+void apple2_render(const memory_t *memory) {
+  if (!apple2_terminal_should_render) {
+    return;
+  }
+
+  bool suc;
+
+  printf("\x1B[2J\x1B[1;1H");
+
+  const log_level_e saved = g_log_level;
+  g_log_level = NO_LOG;
+
+  puts("\nAPPLE II terminal\n");
+
+  for (int i = 0; i < 40; ++i) {
+    putchar('=');
+  }
+
+  putchar(0xa);
+
+  int count = 0;
+
+  for (int i = TEXT_FRAME_BUFFER_START; i <= TEXT_FRAME_BUFFER_END; ++i) {
+    char symbol = memory_read(memory, i, &suc);
+
+    if (!suc || !isprint(symbol)) {
+      symbol = ' ';
+    }
+
+    putchar(symbol);
+    ++count;
+
+    if (count == 1024) {
+      while (count % 40 != 0) {
+        putchar(' ');
+        ++count;
+      }
+    }
+
+    if (count % 40 == 0) {
+      puts("|");
+    }
+  }
+
+  for (int i = 0; i < 40; ++i) {
+    putchar('=');
+  }
+
+  putchar(0xa);
+
+  g_log_level = saved;
+  apple2_terminal_should_render = false;
 }

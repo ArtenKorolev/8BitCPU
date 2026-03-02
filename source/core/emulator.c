@@ -3,34 +3,26 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "apple2.h"
 #include "file_io.h"
+#include "loader.h"
 #include "log.h"
 #include "memory.h"
 
 void emulator_read_file_into_memory(emulator_t *self, const char *file_name);
 
-void emulator_init(emulator_t *self, const emulator_type_e type) {
+void emulator_init(emulator_t *self, const machine_type_e type) {
   emu_log(INFO, "Start initializing emulator;\n");
   self->valid = false;
+  self->type = type;
 
-  read_func_ptr_t read = NULL;
-  write_func_ptr_t write = NULL;
+  load_machine_interface(self);
 
-  switch (type) {
-    case APPLE2:
-      read = apple2_memory_read;
-      write = apple2_memory_write;
-      break;
-    default:  // unsupported machine type
-      emu_log(ERROR, "Unsupported machine type\n");
-      emu_log(ERROR, "Emulator initialization failed;\n");
-      return;
+  if (!self->valid) {
+    emu_log(ERROR, "Emulator initialization failed;\n");
+    return;
   }
 
-  self->valid = true;
-
-  memory_init(&self->memory, read, write);
+  memory_init(&self->memory, self->machine_interface.read, self->machine_interface.write);
   emulator_read_file_into_memory(self, "mem.bin");
 
   if (!self->valid) {
@@ -63,54 +55,12 @@ void emulator_read_file_into_memory(emulator_t *self, const char *file_name) {
   file_content_free(&file_content);
 }
 
-#define ASSERT_ON_VALID(self) \
-  if (!self->valid) {         \
-    return;                   \
-  }
-
-#define TEXT_FRAME_BUFFER_START 0x400
-#define TEXT_FRAME_BUFFER_END 0x07FF
-
-void emulator_render_text(const emulator_t *self) {
-  bool suc;
-
-  switch (g_log_level) {
-    case NO_LOG:
-    case ERROR:
-      printf("\x1B[2J\x1B[1;1H");
-    default:
-      break;
-  }
-
-  puts("\n=== APPLE II terminal ===");
-
-  for (int i = TEXT_FRAME_BUFFER_START; i <= TEXT_FRAME_BUFFER_END; ++i) {
-    char symbol = memory_read(&self->memory, i, &suc);
-
-    if (!suc) {
-      symbol = ' ';
-    }
-
-    if (isprint(symbol)) {
-      putchar(symbol);
-    }
-
-    if (i % 40 == 0) {
-      putchar(0xa);  // new line every 40 characters
-    }
-  }
-
-  puts("\n=== APPLE II terminal ===\n");
-}
-
 int emulator_run(emulator_t *self) {
   if (!self->valid) {
     return 1;
   }
 
   emu_log(INFO, "Emulation started;\n");
-
-  size_t cycles = 0;
 
   while (self->valid) {
     const trap_e cycle_result = cpu_do_cycle(&self->cpu, &self->memory);
@@ -121,14 +71,9 @@ int emulator_run(emulator_t *self) {
       break;
     }
 
-    // for (int i = 0; i < 100000000; ++i);
+    for (int i = 0; i < 100000000; ++i);
 
-    ++cycles;
-
-    if (cycles > 10000) {
-      emulator_render_text(self);
-      cycles = 0;
-    }
+    self->machine_interface.render(&self->memory);
   }
 
   emu_log(INFO, "Emulation ended;\n");
@@ -137,6 +82,9 @@ int emulator_run(emulator_t *self) {
 }
 
 void emulator_shutdown(emulator_t *self) {
-  ASSERT_ON_VALID(self)
+  if (!self->valid) {
+    return;
+  }
+
   memory_free(&self->memory);
 }

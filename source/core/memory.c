@@ -31,4 +31,6 @@ void memory_free(memory_t *self) {
   }
 
   free(self->memory);
+  self->memory = NULL;
+  self->memory_size = 0;
 }
