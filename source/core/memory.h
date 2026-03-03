@@ -5,12 +5,12 @@
 
 #include "base.h"
 
-struct _memory;
+struct Memory;
 
-typedef byte_t (*read_func_ptr_t)(const struct _memory *, const word_t, bool *);
-typedef void (*write_func_ptr_t)(struct _memory *, const word_t, const byte_t);
+typedef byte_t (*read_func_ptr_t)(const struct Memory *, const word_t, bool *);
+typedef void (*write_func_ptr_t)(struct Memory *, const word_t, const byte_t);
 
-struct _memory {
+struct Memory {
   byte_t *memory;
   size_t memory_size;
 
@@ -18,10 +18,10 @@ struct _memory {
   write_func_ptr_t write;
 };
 
-typedef struct _memory memory_t;
+typedef struct Memory memory_t;
 
 void memory_init(memory_t *self, read_func_ptr_t read_func, write_func_ptr_t write_func);
 void memory_free(memory_t *self);
 
-void memory_write(memory_t *self, const word_t address, const byte_t value);
-byte_t memory_read(const memory_t *self, const word_t address, bool *success);
+void memory_write(memory_t *self, word_t address, byte_t value);
+byte_t memory_read(const memory_t *self, word_t address, bool *success);

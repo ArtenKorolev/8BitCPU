@@ -1,13 +1,11 @@
 #pragma once
 
-#include <string.h>
-
 #include "apple2.h"
 #include "emulator.h"
 #include "log.h"
 #include "machine_interface.h"
 
-static inline void load_machine_interface(emulator_t *self) {
+inline void load_machine_interface(emulator_t *self) {
   machine_interface_t interface;
   memset(&interface, 0, sizeof(interface));  // set all pointers to NULL
 

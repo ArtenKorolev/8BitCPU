@@ -119,7 +119,7 @@ void apple2_render(const memory_t *memory) {
 
     if (count == 1024) {
       while (count % 40 != 0) {
-        putchar(' ');
+        putchar(' ');  // fill empty part of the last line with spaces
         ++count;
       }
     }

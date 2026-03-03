@@ -2,7 +2,7 @@
 
 #include "memory.h"
 
-typedef struct _emulator emulator_t;
+typedef struct Emulator emulator_t;
 typedef void (*render_func_ptr_t)(const memory_t *emulator);
 
 typedef struct {

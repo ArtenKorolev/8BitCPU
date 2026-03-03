@@ -10,7 +10,7 @@ typedef enum {
   NES,           // not supported
 } machine_type_e;
 
-struct _emulator {
+struct Emulator {
   cpu_t cpu;
   memory_t memory;
 

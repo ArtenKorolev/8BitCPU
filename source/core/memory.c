@@ -1,7 +1,7 @@
 #include "memory.h"
 
-void memory_init(memory_t *self, read_func_ptr_t read_func, write_func_ptr_t write_func) {
-  byte_t *new_memory = (byte_t *)malloc(MEMORY_SIZE);
+void memory_init(memory_t *self, const read_func_ptr_t read_func, const write_func_ptr_t write_func) {
+  byte_t *new_memory = malloc(MEMORY_SIZE);
 
   if (new_memory == NULL) {
     self->memory = NULL;
