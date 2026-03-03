@@ -5,7 +5,7 @@
 #include "log.h"
 #include "machine_interface.h"
 
-inline void load_machine_interface(emulator_t *self) {
+inline static void load_machine_interface(emulator_t *self) {
   machine_interface_t interface;
   memset(&interface, 0, sizeof(interface));  // set all pointers to NULL
 
