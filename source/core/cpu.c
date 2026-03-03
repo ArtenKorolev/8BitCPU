@@ -200,11 +200,15 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case LDAIY_OPCOD:
     case STAIX_OPCOD:
     case STAIY_OPCOD:
+    case CMPIY_OPCOD:
+    case CMPIX_OPCOD:
       bytes = 1;
       break;
     case DECA_OPCOD:
     case DECAX_OPCOD:
     case INCA_OPCOD:
+    case CMPAX_OPCOD:
+    case CMPAY_OPCOD:
     case INCAX_OPCOD:
     case JMPA_OPCOD:
     case LDAA_OPCOD:
@@ -259,6 +263,18 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case CMPAX_OPCOD:
+      cpu_compare(self, memory, self->reg_A, ABSOLUTE_X);
+      break;
+    case CMPAY_OPCOD:
+      cpu_compare(self, memory, self->reg_A, ABSOLUTE_Y);
+      break;
+    case CMPIX_OPCOD:
+      cpu_compare(self, memory, self->reg_A, INDEXED_INDERECT_X);
+      break;
+    case CMPIY_OPCOD:
+      cpu_compare(self, memory, self->reg_A, INDERECT_INDEXED_Y);
       break;
     case TAY_OPCOD:
       cpu_transfer_registers(self, &self->reg_A, &self->reg_Y);

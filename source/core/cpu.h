@@ -78,6 +78,10 @@ typedef enum {
   CMPI_OPCOD = 0xC9,  // Compare accumulator with immediate
   CMPZ_OPCOD = 0xC5,  // Compare accumulator with zero page
   CMPA_OPCOD = 0xCD,  // Compare accumulator with absolute
+  CMPAY_OPCOD = 0xD9,
+  CMPAX_OPCOD = 0xDD,
+  CMPIX_OPCOD = 0xC1,
+  CMPIY_OPCOD = 0xD1,
 
   CPXI_OPCOD = 0xE0,  // Compare X with immediate
   CPXZ_OPCOD = 0xE4,  // Compare X with zero page
