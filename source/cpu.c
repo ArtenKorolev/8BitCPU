@@ -15,7 +15,7 @@ void cpu_reset_operands_buffer(cpu_t *self);
 word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
 byte_t cpu_fetch(cpu_t *self, memory_t *memory, bool *success);
-void cpu_jump(cpu_t *self);
+void cpu_jump(cpu_t *self, addressing_mode_e mode, const memory_t *memory);
 void cpu_set_remaining_bytes(cpu_t *self);
 void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value);
 void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name, addressing_mode_e mode,
@@ -24,7 +24,8 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
                         addressing_mode_e mode);
 void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address);
+word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, const addressing_mode_e mode,
+                                 bool *return_value_is_address);
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory);
 void cpu_return_from_subroutine(cpu_t *self, memory_t *memory);
 void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_if_set);
@@ -197,6 +198,10 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case INCZX_OPCOD:
     case ADDZ_OPCOD:
     case ADDZX_OPCOD:
+    case LDAIX_OPCOD:
+    case LDAIY_OPCOD:
+    case STAIX_OPCOD:
+    case STAIY_OPCOD:
       bytes = 1;
       break;
     case DECA_OPCOD:
@@ -226,6 +231,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CPYA_OPCOD:
     case ADDA_OPCOD:
     case ADDAY_OPCOD:
+    case JMPI_OPCOD:
     case ADDAX_OPCOD:
       bytes = 2;
       break;
@@ -267,6 +273,12 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case TXS_OPCOD:
       cpu_transfer_registers(self, &self->reg_X, &self->reg_SP);
+      break;
+    case STAIX_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, INDEXED_INDERECT_X);
+      break;
+    case STAIY_OPCOD:
+      cpu_store_register(self, self->reg_A, 'A', memory, INDERECT_INDEXED_Y);
       break;
     case TXA_OPCOD:
       cpu_transfer_registers(self, &self->reg_X, &self->reg_A);
@@ -428,7 +440,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       cpu_add_to_accumulator(self, memory, IMMEDIATE);
       break;
     case JMPA_OPCOD:
-      cpu_jump(self);
+      cpu_jump(self, ABSOLUTE, NULL);
       break;
     case ANDA_OPCOD:
       cpu_and_with_accumulator(self, memory, ABSOLUTE);
@@ -487,6 +499,9 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case BVS_OPCOD:
       cpu_branch_based_on_flag(self, OVERFLOW_MASK, true);
       break;
+    case JMPI_OPCOD:
+      cpu_jump(self, ABSOLUTE, memory);
+      break;
     case CMPI_OPCOD:
       cpu_compare(self, memory, self->reg_A, IMMEDIATE);
       break;
@@ -514,6 +529,12 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
     case CPYA_OPCOD:
       cpu_compare(self, memory, self->reg_Y, ABSOLUTE);
       break;
+    case LDAIX_OPCOD:
+      cpu_load_to_register(self, &self->reg_A, 'A', INDEXED_INDERECT_X, memory);
+      break;
+    case LDAIY_OPCOD:
+      cpu_load_to_register(self, &self->reg_A, 'A', INDERECT_INDEXED_Y, memory);
+      break;
     default:
       self->last_trap = ILLEGAL_OPCODE;
       emu_log(ERROR, "Illegal opcode: %x;\n", self->reg_IR);
@@ -526,12 +547,20 @@ void cpu_load_to_register(cpu_t *self, byte_t *register_ptr, char register_name,
   bool suc = true;
   bool is_address = true;
 
-  const word_t first_operand = cpu_resolve_first_operand(self, mode, &is_address);
+  const word_t first_operand = cpu_resolve_first_operand(self, NULL, mode, &is_address);
 
   byte_t value = 0;
 
   if (is_address) {
     value = memory_read(memory, first_operand, &suc);
+
+    switch (mode) {
+      case INDERECT_INDEXED_Y:
+      case INDEXED_INDERECT_X:
+        value = memory_read(memory, value, &suc);  // value = effective address
+      default:
+        break;
+    }
   } else {
     value = first_operand;
   }
@@ -550,7 +579,7 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
   bool suc = true;
   bool is_address = true;
 
-  const word_t operand = cpu_resolve_first_operand(self, mode, &is_address);
+  const word_t operand = cpu_resolve_first_operand(self, NULL, mode, &is_address);
 
   byte_t value = 0;
 
@@ -574,7 +603,7 @@ void cpu_store_register(cpu_t *self, byte_t register_value, const char register_
                         const addressing_mode_e mode) {
   emu_log(INFO, "Store register;\n");
 
-  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+  const word_t address = cpu_resolve_first_operand(self, NULL, mode, NULL);
 
   memory_write(memory, address, register_value);
 }
@@ -584,7 +613,7 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
 
   bool suc = true;
   bool is_address = true;
-  word_t value = cpu_resolve_first_operand(self, mode, &is_address);
+  word_t value = cpu_resolve_first_operand(self, NULL, mode, &is_address);
 
   if (is_address) {
     value = memory_read(memory, value, &suc);
@@ -609,8 +638,19 @@ void cpu_add_to_accumulator(cpu_t *self, const memory_t *memory, const addressin
   cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
-word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode, bool *return_value_is_address) {
+word_t calculate_buggy_address_of_hi_part(const word_t inderect_address) {
+  if ((inderect_address & 0xFF) != 0xFF) {
+    return inderect_address + 1;
+  }
+
+  return inderect_address & 0xFF00;
+}
+
+word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, const addressing_mode_e mode,
+                                 bool *return_value_is_address) {
   word_t value = 0;
+
+  bool suc = true;
 
   if (return_value_is_address != NULL) {
     *return_value_is_address = true;
@@ -636,13 +676,27 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const addressing_mode_e mode
       value = (self->operands_buffer[0] + self->reg_X) & 0xFF;
       break;
     case ABSOLUTE:
-      value = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) & 0xFFFF;
+      value = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]);
       break;
     case ABSOLUTE_X:
-      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X) & 0xFFFF;
+      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_X);
       break;
     case ABSOLUTE_Y:
-      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y) & 0xFFFF;
+      value = (MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]) + self->reg_Y);
+      break;
+    case INDERECT:
+      // address of effective address
+      value = MAKE_WORD(self->operands_buffer[1], self->operands_buffer[0]);  // not an effective address!
+      const word_t hi_part = calculate_buggy_address_of_hi_part(value);
+      value = MAKE_WORD(memory_read(memory, hi_part, &suc), memory_read(memory, value, &suc));  // effective address
+    case INDERECT_INDEXED_Y:
+      value = self->operands_buffer[0];
+      value = MAKE_WORD(memory_read(memory, value, &suc), memory_read(memory, (value + 1) & 0xFF, &suc)) + self->reg_Y;
+      break;
+    case INDEXED_INDERECT_X:
+      value = self->operands_buffer[0];
+      value = (value + self->reg_X) & 0xFF;
+      value = MAKE_WORD(memory_read(memory, value, &suc), memory_read(memory, (value + 1) & 0xFF, &suc));
       break;
     default:
       return 0;
@@ -701,7 +755,7 @@ byte_t cpu_pull_from_stack(cpu_t *self, memory_t *memory) {
 void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
   emu_log(INFO, "Jumping to subroutine;\n");
 
-  const word_t jumping_address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
+  const word_t jumping_address = cpu_resolve_first_operand(self, NULL, ABSOLUTE, NULL);
 
   const word_t pushing_address =
       self->reg_IP - 1;  // address of the next instruction to execute after the subroutine call
@@ -720,10 +774,10 @@ void cpu_return_from_subroutine(cpu_t *self, memory_t *memory) {
   self->reg_IP = address + 1;
 }
 
-void cpu_jump(cpu_t *self) {
+void cpu_jump(cpu_t *self, const addressing_mode_e mode, const memory_t *memory) {
   emu_log(INFO, "Jump;\n");
 
-  const word_t address = cpu_resolve_first_operand(self, ABSOLUTE, NULL);
+  const word_t address = cpu_resolve_first_operand(self, memory, mode, NULL);
 
   self->reg_IP = address;
 }
@@ -737,7 +791,7 @@ void cpu_branch_based_on_flag(cpu_t *self, const byte_t mask, const bool branch_
 
   bool suc = true;
 
-  const byte_t offset = cpu_resolve_first_operand(self, RELATIVE, NULL);
+  const byte_t offset = cpu_resolve_first_operand(self, NULL, RELATIVE, NULL);
 
   if (!suc) {
     self->last_trap = SEGMENTATION_FAULT;
@@ -759,7 +813,7 @@ void cpu_compare(cpu_t *self, const memory_t *memory, const byte_t register_valu
 
   bool suc = true;
   bool is_address = true;
-  word_t value = cpu_resolve_first_operand(self, mode, &is_address);
+  word_t value = cpu_resolve_first_operand(self, NULL, mode, &is_address);
 
   if (is_address) {
     value = memory_read(memory, value, &suc);
@@ -785,7 +839,7 @@ void cpu_decrement_memory(cpu_t *self, memory_t *memory, const addressing_mode_e
 
   bool suc = true;
 
-  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+  const word_t address = cpu_resolve_first_operand(self, NULL, mode, NULL);
 
   emu_log(INFO, "Decrementing address: %x\n", address);
 
@@ -816,7 +870,7 @@ void cpu_increment_register(cpu_t *self, byte_t *register_ptr) {
 void cpu_increment_memory(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
   emu_log(INFO, "Increment memory;\n");
 
-  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+  const word_t address = cpu_resolve_first_operand(self, NULL, mode, NULL);
 
   emu_log(INFO, "Incrementing address: %x\n", address);
 
@@ -838,7 +892,7 @@ void cpu_test_bit(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
 
   bool suc = true;
 
-  const word_t address = cpu_resolve_first_operand(self, mode, NULL);
+  const word_t address = cpu_resolve_first_operand(self, NULL, mode, NULL);
 
   const byte_t value = memory_read(memory, address, &suc);
 

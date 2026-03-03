@@ -15,6 +15,9 @@ typedef enum {
   LDAAX_OPCOD = 0xBD,  // move to register A a value from absolute address + X
   LDAAY_OPCOD = 0xB9,  // move to register A a value from absolute address + X
 
+  LDAIX_OPCOD = 0xA1,
+  LDAIY_OPCOD = 0xB1,
+
   LDXI_OPCOD = 0xA2,   // move to register X an immediate value
   LDXZ_OPCOD = 0xA6,   // move to register X a value from zero page address
   LDXZY_OPCOD = 0xB6,  // move to register X a value from zero page address + Y
@@ -40,6 +43,9 @@ typedef enum {
   STYZ_OPCOD = 0x84,   // store register Y to address in zero page address
   STYZX_OPCOD = 0x94,  // store register Y to address in zero page address + X
   STYA_OPCOD = 0x8C,   // store register Y to address in absolute address
+
+  STAIX_OPCOD = 0x81,
+  STAIY_OPCOD = 0x91,
 
   ANDI_OPCOD = 0x29,   // logical and A with immediate
   ANDZ_OPCOD = 0x25,   // logical and A with a value from zero page address
@@ -115,6 +121,8 @@ typedef enum {
   TYA_OPCOD = 0x98,
   TSX_OPCOD = 0xBA,
   TXS_OPCOD = 0x9A,
+
+  JMPI_OPCOD = 0x6C,
 } opcode_e;
 
 typedef enum {
@@ -128,8 +136,8 @@ typedef enum {
   ABSOLUTE_X,
   ABSOLUTE_Y,
   INDERECT,
-  INDEXED_INDERECT,
-  INDERECT_INDEXED,
+  INDEXED_INDERECT_X,
+  INDERECT_INDEXED_Y,
 } addressing_mode_e;
 
 typedef enum {
