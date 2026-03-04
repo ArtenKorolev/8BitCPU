@@ -127,6 +127,15 @@ typedef enum {
   TXS_OPCOD = 0x9A,
 
   JMPI_OPCOD = 0x6C,
+
+  EORI_OPCOD = 0x49,
+  EORZ_OPCOD = 0x45,
+  EORZX_OPCOD = 0x55,
+  EORA_OPCOD = 0x4D,
+  EORAX_OPCOD = 0x5D,
+  EORAY_OPCOD = 0x59,
+  EORIX_OPCOD = 0x41,
+  EORIY_OPCOD = 0x51,
 } opcode_e;
 
 typedef enum {

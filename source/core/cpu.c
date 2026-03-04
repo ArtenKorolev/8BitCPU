@@ -34,6 +34,7 @@ void cpu_decrement_register(cpu_t *self, byte_t *register_ptr);
 void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
 void cpu_test_bit(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to);
+void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 
 #define MAKE_WORD(a, b) (((word_t)a << 8) | (word_t)(b))
 
@@ -202,8 +203,16 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case STAIY_OPCOD:
     case CMPIY_OPCOD:
     case CMPIX_OPCOD:
+    case EORI_OPCOD:
+    case EORZ_OPCOD:
+    case EORZX_OPCOD:
+    case EORIX_OPCOD:
+    case EORIY_OPCOD:
       bytes = 1;
       break;
+    case EORA_OPCOD:
+    case EORAX_OPCOD:
+    case EORAY_OPCOD:
     case DECA_OPCOD:
     case DECAX_OPCOD:
     case INCA_OPCOD:
@@ -269,6 +278,30 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       break;
     case CMPAY_OPCOD:
       cpu_compare(self, memory, self->reg_A, ABSOLUTE_Y);
+      break;
+    case EORZ_OPCOD:
+      cpu_exclusive_or(self, memory, ZERO_PAGE);
+      break;
+    case EORZX_OPCOD:
+      cpu_exclusive_or(self, memory, ZERO_PAGE_X);
+      break;
+    case EORA_OPCOD:
+      cpu_exclusive_or(self, memory, ABSOLUTE);
+      break;
+    case EORI_OPCOD:
+      cpu_exclusive_or(self, memory, IMMEDIATE);
+      break;
+    case EORAX_OPCOD:
+      cpu_exclusive_or(self, memory, ABSOLUTE_X);
+      break;
+    case EORAY_OPCOD:
+      cpu_exclusive_or(self, memory, ABSOLUTE_Y);
+      break;
+    case EORIX_OPCOD:
+      cpu_exclusive_or(self, memory, INDEXED_INDERECT_X);
+      break;
+    case EORIY_OPCOD:
+      cpu_exclusive_or(self, memory, INDERECT_INDEXED_Y);
       break;
     case CMPIX_OPCOD:
       cpu_compare(self, memory, self->reg_A, INDEXED_INDERECT_X);
@@ -921,6 +954,24 @@ void cpu_test_bit(cpu_t *self, const memory_t *memory, const addressing_mode_e m
   } else {
     cpu_status_flag_clear(self, OVERFLOW_MASK);
   }
+}
+
+void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode) {
+  bool is_address = true, suc = true;
+
+  byte_t value = cpu_resolve_first_operand(self, memory, mode, &is_address);
+
+  if (is_address) {
+    value = memory_read(memory, value, &suc);
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
+  self->reg_A ^= value;
+  cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
