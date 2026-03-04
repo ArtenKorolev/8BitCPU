@@ -136,6 +136,12 @@ typedef enum {
   EORAY_OPCOD = 0x59,
   EORIX_OPCOD = 0x41,
   EORIY_OPCOD = 0x51,
+
+  LSRAC_OPCOD = 0x4A,
+  LSRZ_OPCOD = 0x46,
+  LSRZX_OPCOD = 0x56,
+  LSRA_OPCOD = 0x4E,
+  LSRAX_OPCOD = 0x5E,
 } opcode_e;
 
 typedef enum {

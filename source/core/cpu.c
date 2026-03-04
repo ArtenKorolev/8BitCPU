@@ -35,6 +35,7 @@ void cpu_increment_register(cpu_t *self, byte_t *register_ptr);
 void cpu_test_bit(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to);
 void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
+void cpu_logical_shift_right(cpu_t *self, memory_t *memory, addressing_mode_e);
 
 #define MAKE_WORD(a, b) (((word_t)a << 8) | (word_t)(b))
 
@@ -208,6 +209,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case EORZX_OPCOD:
     case EORIX_OPCOD:
     case EORIY_OPCOD:
+    case LSRZ_OPCOD:
+    case LSRZX_OPCOD:
       bytes = 1;
       break;
     case EORA_OPCOD:
@@ -219,6 +222,8 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case CMPAX_OPCOD:
     case CMPAY_OPCOD:
     case INCAX_OPCOD:
+    case LSRA_OPCOD:
+    case LSRAX_OPCOD:
     case JMPA_OPCOD:
     case LDAA_OPCOD:
     case LDAAX_OPCOD:
@@ -261,6 +266,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case TAY_OPCOD:
     case TYA_OPCOD:
     case TXS_OPCOD:
+    case LSRAC_OPCOD:
     case TSX_OPCOD:
       break;
   }
@@ -272,6 +278,21 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case LSRA_OPCOD:
+      cpu_logical_shift_right(self, memory, ABSOLUTE);
+      break;
+    case LSRAX_OPCOD:
+      cpu_logical_shift_right(self, memory, ABSOLUTE_X);
+      break;
+    case LSRZ_OPCOD:
+      cpu_logical_shift_right(self, memory, ZERO_PAGE);
+      break;
+    case LSRZX_OPCOD:
+      cpu_logical_shift_right(self, memory, ZERO_PAGE_X);
+      break;
+    case LSRAC_OPCOD:
+      emu_log(ERROR, "Unsupported opcode yet\n");
       break;
     case CMPAX_OPCOD:
       cpu_compare(self, memory, self->reg_A, ABSOLUTE_X);
@@ -798,6 +819,8 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
 
   const word_t jumping_address = cpu_resolve_first_operand(self, memory, ABSOLUTE, NULL);
 
+  emu_log(INFO, "Jumping address: %x;\n", jumping_address);
+
   const word_t pushing_address =
       self->reg_IP - 1;  // address of the next instruction to execute after the subroutine call
 
@@ -810,9 +833,13 @@ void cpu_jump_subroutine(cpu_t *self, memory_t *memory) {
 void cpu_return_from_subroutine(cpu_t *self, const memory_t *memory) {
   emu_log(INFO, "Return from subroutine;\n");
 
-  word_t address = cpu_pull_from_stack(self, memory);
-  address += (cpu_pull_from_stack(self, memory) << 8);
-  self->reg_IP = address + 1;
+  word_t return_address = cpu_pull_from_stack(self, memory);
+  return_address += (cpu_pull_from_stack(self, memory) << 8);
+  ++return_address;
+
+  emu_log(INFO, "Return address: %x;\n", return_address);
+
+  self->reg_IP = return_address;
 }
 
 void cpu_jump(cpu_t *self, const addressing_mode_e mode, const memory_t *memory) {
@@ -957,6 +984,7 @@ void cpu_test_bit(cpu_t *self, const memory_t *memory, const addressing_mode_e m
 }
 
 void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode) {
+  emu_log(INFO, "Exclusive OR;\n");
   bool is_address = true, suc = true;
 
   byte_t value = cpu_resolve_first_operand(self, memory, mode, &is_address);
@@ -975,7 +1003,7 @@ void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mod
 }
 
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
-  emu_log(INFO, "Transferring registers;");
+  emu_log(INFO, "Transferring registers;\n");
 
   if (from == NULL || to == NULL) {
     return;
@@ -983,6 +1011,30 @@ void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
 
   *to = *from;
   cpu_update_zero_and_negative_flags(self, *to);
+}
+
+void cpu_logical_shift_right(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  emu_log(INFO, "Logical shift right");
+  bool is_address = true, suc = true;
+
+  word_t first_operand = cpu_resolve_first_operand(self, memory, mode, &is_address);
+  byte_t value = 0;
+
+  if (is_address) {
+    value = memory_read(memory, first_operand, &suc);
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
+  const byte_t result = value >> 1;
+  cpu_update_zero_and_negative_flags(self, result);
+
+  if (is_address) {
+    memory_write(memory, first_operand, result);
+  }
 }
 
 void cpu_dump_one_flag(const cpu_t *self, const char *flag_name, const byte_t mask, FILE *stream) {
