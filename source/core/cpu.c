@@ -36,8 +36,10 @@ void cpu_test_bit(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to);
 void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_logical_shift_right(cpu_t *self, memory_t *memory, addressing_mode_e);
+void cpu_arithmetic_shift_left(cpu_t *self, memory_t *memory, addressing_mode_e);
 byte_t cpu_pull_from_stack(cpu_t *self, const memory_t *memory);
 void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value);
+void cpu_or_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 
 #define MAKE_WORD(a, b) (((word_t)a << 8) | (word_t)(b))
 
@@ -213,6 +215,13 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case EORIY_OPCOD:
     case LSRZ_OPCOD:
     case LSRZX_OPCOD:
+    case ORAI_OPCOD:
+    case ORAIX_OPCOD:
+    case ORAIY_OPCOD:
+    case ORAZX_OPCOD:
+    case ORAZ_OPCOD:
+    case ASLZX_OPCOD:
+    case ASLZ_OPCOD:
       bytes = 1;
       break;
     case EORA_OPCOD:
@@ -251,9 +260,15 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ADDAY_OPCOD:
     case JMPI_OPCOD:
     case ADDAX_OPCOD:
+    case ORAA_OPCOD:
+    case ORAAY_OPCOD:
+    case ORAAX_OPCOD:
+    case ASLA_OCCOD:
+    case ASLAX_OPCOD:
       bytes = 2;
       break;
     case NOP_OPCOD:
+    case ASLAC_OPCOD:
     case DEX_OPCOD:
     case DEY_OPCOD:
     case CLC_OPCOD:
@@ -284,6 +299,45 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case ASLA_OCCOD:
+      cpu_arithmetic_shift_left(self, memory, ABSOLUTE);
+      break;
+    case ASLAC_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ACCUMULATOR);
+      break;
+    case ASLAX_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ABSOLUTE_X);
+      break;
+    case ASLZ_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ZERO_PAGE);
+      break;
+    case ASLZX_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ZERO_PAGE_X);
+      break;
+    case ORAI_OPCOD:
+      cpu_or_with_accumulator(self, memory, IMMEDIATE);
+      break;
+    case ORAZ_OPCOD:
+      cpu_or_with_accumulator(self, memory, ZERO_PAGE);
+      break;
+    case ORAZX_OPCOD:
+      cpu_or_with_accumulator(self, memory, ZERO_PAGE_X);
+      break;
+    case ORAA_OPCOD:
+      cpu_or_with_accumulator(self, memory, ABSOLUTE);
+      break;
+    case ORAAX_OPCOD:
+      cpu_or_with_accumulator(self, memory, ABSOLUTE_X);
+      break;
+    case ORAAY_OPCOD:
+      cpu_or_with_accumulator(self, memory, ABSOLUTE_Y);
+      break;
+    case ORAIX_OPCOD:
+      cpu_or_with_accumulator(self, memory, INDEXED_INDERECT_X);
+      break;
+    case ORAIY_OPCOD:
+      cpu_or_with_accumulator(self, memory, INDERECT_INDEXED_Y);
       break;
     case PLA_OPCOD:
       self->reg_A = cpu_pull_from_stack(self, memory);
@@ -676,6 +730,31 @@ void cpu_and_with_accumulator(cpu_t *self, const memory_t *memory, const address
   cpu_update_zero_and_negative_flags(self, self->reg_A);
 }
 
+void cpu_or_with_accumulator(cpu_t *self, const memory_t *memory, addressing_mode_e mode) {
+  emu_log(INFO, "Logical OR with accumulator;\n");
+  bool suc = true;
+  bool is_address = true;
+
+  const word_t operand = cpu_resolve_first_operand(self, memory, mode, &is_address);
+
+  byte_t value = 0;
+
+  if (is_address) {
+    value = memory_read(memory, operand, &suc);
+  } else {
+    value = operand;
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
+  self->reg_A |= value;
+
+  cpu_update_zero_and_negative_flags(self, self->reg_A);
+}
+
 void cpu_store_register(const cpu_t *self, const byte_t register_value, memory_t *memory,
                         const addressing_mode_e mode) {
   emu_log(INFO, "Store register;\n");
@@ -1056,6 +1135,40 @@ void cpu_logical_shift_right(cpu_t *self, memory_t *memory, const addressing_mod
   }
 
   const byte_t result = value >> 1;
+  cpu_update_zero_and_negative_flags(self, result);
+
+  if (is_address) {
+    memory_write(memory, first_operand, result);
+  } else {
+    self->reg_A = result;
+  }
+}
+
+void cpu_arithmetic_shift_left(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
+  emu_log(INFO, "Arithmetci shift left;\n");
+  bool is_address = true, suc = true;
+
+  word_t first_operand = cpu_resolve_first_operand(self, memory, mode, &is_address);
+  byte_t value = 0;
+
+  if (is_address) {
+    value = memory_read(memory, first_operand, &suc);
+  } else {
+    value = self->reg_A;
+  }
+
+  if (!suc) {
+    self->last_trap = SEGMENTATION_FAULT;
+    return;
+  }
+
+  if (value & NEGATIVE_MASK) {
+    cpu_status_flag_set(self, CARRY_MASK);
+  } else {
+    cpu_status_flag_clear(self, CARRY_MASK);
+  }
+
+  const byte_t result = value << 1;
   cpu_update_zero_and_negative_flags(self, result);
 
   if (is_address) {

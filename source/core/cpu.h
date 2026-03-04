@@ -147,6 +147,21 @@ typedef enum {
   PHP_OPCOD = 0x08,
   PLA_OPCOD = 0x68,
   PLP_OPCOD = 0x28,
+
+  ORAI_OPCOD = 0x09,
+  ORAZ_OPCOD = 0x05,
+  ORAZX_OPCOD = 0x15,
+  ORAA_OPCOD = 0x0D,
+  ORAAX_OPCOD = 0x1D,
+  ORAAY_OPCOD = 0x19,
+  ORAIX_OPCOD = 0x01,
+  ORAIY_OPCOD = 0x11,
+
+  ASLAC_OPCOD = 0x0A,
+  ASLZ_OPCOD = 0x06,
+  ASLZX_OPCOD = 0x16,
+  ASLA_OCCOD = 0x0E,
+  ASLAX_OPCOD = 0x1E,
 } opcode_e;
 
 typedef enum {
