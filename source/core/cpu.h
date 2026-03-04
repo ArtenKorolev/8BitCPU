@@ -142,6 +142,11 @@ typedef enum {
   LSRZX_OPCOD = 0x56,
   LSRA_OPCOD = 0x4E,
   LSRAX_OPCOD = 0x5E,
+
+  PHA_OPCOD = 0x48,
+  PHP_OPCOD = 0x08,
+  PLA_OPCOD = 0x68,
+  PLP_OPCOD = 0x28,
 } opcode_e;
 
 typedef enum {

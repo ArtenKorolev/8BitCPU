@@ -36,6 +36,8 @@ void cpu_test_bit(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to);
 void cpu_exclusive_or(cpu_t *self, const memory_t *memory, addressing_mode_e mode);
 void cpu_logical_shift_right(cpu_t *self, memory_t *memory, addressing_mode_e);
+byte_t cpu_pull_from_stack(cpu_t *self, const memory_t *memory);
+void cpu_push_value_onto_stack(cpu_t *self, memory_t *memory, const byte_t value);
 
 #define MAKE_WORD(a, b) (((word_t)a << 8) | (word_t)(b))
 
@@ -266,6 +268,10 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case TAY_OPCOD:
     case TYA_OPCOD:
     case TXS_OPCOD:
+    case PHP_OPCOD:
+    case PLA_OPCOD:
+    case PLP_OPCOD:
+    case PHA_OPCOD:
     case LSRAC_OPCOD:
     case TSX_OPCOD:
       break;
@@ -278,6 +284,18 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case PLA_OPCOD:
+      self->reg_A = cpu_pull_from_stack(self, memory);
+      break;
+    case PHA_OPCOD:
+      cpu_push_value_onto_stack(self, memory, self->reg_A);
+      break;
+    case PHP_OPCOD:
+      cpu_push_value_onto_stack(self, memory, self->reg_P);
+      break;
+    case PLP_OPCOD:
+      self->reg_P = cpu_pull_from_stack(self, memory);
       break;
     case LSRA_OPCOD:
       cpu_logical_shift_right(self, memory, ABSOLUTE);
@@ -292,7 +310,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
       cpu_logical_shift_right(self, memory, ZERO_PAGE_X);
       break;
     case LSRAC_OPCOD:
-      emu_log(ERROR, "Unsupported opcode yet\n");
+      cpu_logical_shift_right(self, memory, ACCUMULATOR);
       break;
     case CMPAX_OPCOD:
       cpu_compare(self, memory, self->reg_A, ABSOLUTE_X);
@@ -1014,7 +1032,7 @@ void cpu_transfer_registers(cpu_t *self, const byte_t *from, byte_t *to) {
 }
 
 void cpu_logical_shift_right(cpu_t *self, memory_t *memory, const addressing_mode_e mode) {
-  emu_log(INFO, "Logical shift right");
+  emu_log(INFO, "Logical shift right;\n");
   bool is_address = true, suc = true;
 
   word_t first_operand = cpu_resolve_first_operand(self, memory, mode, &is_address);
@@ -1022,6 +1040,8 @@ void cpu_logical_shift_right(cpu_t *self, memory_t *memory, const addressing_mod
 
   if (is_address) {
     value = memory_read(memory, first_operand, &suc);
+  } else {
+    value = self->reg_A;
   }
 
   if (!suc) {
@@ -1029,11 +1049,19 @@ void cpu_logical_shift_right(cpu_t *self, memory_t *memory, const addressing_mod
     return;
   }
 
+  if (value & 0x01) {
+    cpu_status_flag_set(self, CARRY_MASK);
+  } else {
+    cpu_status_flag_clear(self, CARRY_MASK);
+  }
+
   const byte_t result = value >> 1;
   cpu_update_zero_and_negative_flags(self, result);
 
   if (is_address) {
     memory_write(memory, first_operand, result);
+  } else {
+    self->reg_A = result;
   }
 }
 
