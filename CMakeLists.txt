@@ -3,7 +3,9 @@ project(emu8)
 
 file(GLOB C_SRC 
     "source/*.c"
-    "source/machine/apple2/*.c"
+    "source/platform/apple2/*.c"
+    "source/core/cpu/*.c"
+    "source/core/memory/*.c"
     "source/core/*.c"
     "source/utils/*.c"
 )
@@ -11,8 +13,10 @@ file(GLOB C_SRC
 include_directories(
     source/core 
     source/utils
-    source/machine
-    source/machine/apple2
+    source/platform
+    source/core/cpu
+    source/core/memory
+    source/platform/apple2
 )
 
 add_compile_options(-Wall -Wextra -Wpedantic -O2)

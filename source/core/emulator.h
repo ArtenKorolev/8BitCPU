@@ -1,8 +1,8 @@
 #pragma once
 
 #include "cpu.h"
-#include "machine_interface.h"
 #include "memory.h"
+#include "platform_interface.h"
 
 typedef enum {
   APPLE2,
@@ -16,7 +16,7 @@ struct Emulator {
 
   bool valid;
   machine_type_e type;
-  machine_interface_t machine_interface;
+  platform_interface_t machine_interface;
 };
 
 void emulator_init(emulator_t *self, machine_type_e type);
