@@ -1,0 +1,17 @@
+#pragma once
+
+typedef enum {
+  IMPLIED,
+  IMMEDIATE,
+  ACCUMULATOR,
+  ZERO_PAGE,
+  ZERO_PAGE_X,
+  ZERO_PAGE_Y,
+  RELATIVE,
+  ABSOLUTE,
+  ABSOLUTE_X,
+  ABSOLUTE_Y,
+  INDIRECT,
+  INDIRECT_X,
+  INDERECT_Y,
+} addressing_mode_e;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string.h>
+
 #include "apple2.h"
 #include "emulator.h"
 #include "log.h"
