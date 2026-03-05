@@ -16,10 +16,18 @@ void memory_init(memory_t *self, const read_func_ptr_t read_func, const write_fu
 }
 
 void memory_write(memory_t *self, const word_t address, const byte_t value) {
+  if (self == NULL || self->write == NULL) {
+    return;
+  }
+
   self->write(self, address, value);
 }
 
 byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
+  if (self == NULL || self->read == NULL) {
+    return 0;
+  }
+
   return self->read(self, address, success);
 }
 
