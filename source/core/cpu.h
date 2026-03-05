@@ -162,6 +162,15 @@ typedef enum {
   ASLZX_OPCOD = 0x16,
   ASLA_OCCOD = 0x0E,
   ASLAX_OPCOD = 0x1E,
+
+  // Undocumented opcodes:
+  SLOZ_OPCOD = 0x07,
+  SLOZX_OPCOD = 0x17,
+  SLOA_OPCOD = 0x0F,
+  SLOAX_OPCOD = 0x1F,
+  SLOAY_OPCOD = 0x1B,
+  SLOIX_OPCOD = 0x03,
+  SLOIY_OPCOD = 0x13,
 } opcode_e;
 
 typedef enum {

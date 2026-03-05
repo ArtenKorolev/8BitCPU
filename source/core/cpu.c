@@ -107,6 +107,7 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
   switch (self->state) {
     case FETCH:
       self->reg_IR = cpu_fetch(self, memory, &success);
+      emu_log(INFO, "Fetched opcode: %x\n", self->reg_IR);
 
       if (!success) {  // failed fetching opcode
         self->reg_IR = 0;
@@ -222,8 +223,15 @@ void cpu_set_remaining_bytes(cpu_t *self) {
     case ORAZ_OPCOD:
     case ASLZX_OPCOD:
     case ASLZ_OPCOD:
+    case SLOZX_OPCOD:
+    case SLOZ_OPCOD:
+    case SLOIY_OPCOD:
+    case SLOIX_OPCOD:
       bytes = 1;
       break;
+    case SLOAY_OPCOD:
+    case SLOA_OPCOD:
+    case SLOAX_OPCOD:
     case EORA_OPCOD:
     case EORAX_OPCOD:
     case EORAY_OPCOD:
@@ -299,6 +307,34 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
   switch ((opcode_e)self->reg_IR) {
     case NOP_OPCOD:
       emu_log(INFO, "No operation;\n");
+      break;
+    case SLOA_OPCOD:  // SLO absolute
+      cpu_arithmetic_shift_left(self, memory, ABSOLUTE);
+      cpu_or_with_accumulator(self, memory, ABSOLUTE);
+      break;
+    case SLOZ_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ZERO_PAGE);
+      cpu_or_with_accumulator(self, memory, ZERO_PAGE);
+      break;
+    case SLOZX_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ZERO_PAGE_X);
+      cpu_or_with_accumulator(self, memory, ZERO_PAGE_X);
+      break;
+    case SLOAX_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ABSOLUTE_X);
+      cpu_or_with_accumulator(self, memory, ABSOLUTE_X);
+      break;
+    case SLOAY_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, ABSOLUTE_Y);
+      cpu_or_with_accumulator(self, memory, ABSOLUTE_Y);
+      break;
+    case SLOIX_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, INDEXED_INDERECT_X);
+      cpu_or_with_accumulator(self, memory, INDEXED_INDERECT_X);
+      break;
+    case SLOIY_OPCOD:
+      cpu_arithmetic_shift_left(self, memory, INDERECT_INDEXED_Y);
+      cpu_or_with_accumulator(self, memory, INDERECT_INDEXED_Y);
       break;
     case ASLA_OCCOD:
       cpu_arithmetic_shift_left(self, memory, ABSOLUTE);
