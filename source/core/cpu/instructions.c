@@ -233,7 +233,7 @@ void nop_instr(const instr_context_t *ctx) {
 }
 
 const opcode_data_t *get_opcode_data(const opcode_e opcode) {
-  if (opcode > OPCODES_COUNT) {
+  if (opcode >= OPCODES_COUNT) {
     return NULL;
   }
 
@@ -407,6 +407,12 @@ const opcode_data_t *get_opcode_data(const opcode_e opcode) {
       [TSX_OPCOD] = {0, tsx_instr, IMPLIED},
       [TXS_OPCOD] = {0, txs_instr, IMPLIED},
   };
+
+  const opcode_data_t data = opcodes_data_table[opcode];
+
+  if (data.addressing_mode == 0 && data.bytes_for_operands == 0 && data.impl == 0) {
+    return NULL;
+  }
 
   return &opcodes_data_table[opcode];
 }
