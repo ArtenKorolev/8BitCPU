@@ -1,7 +1,6 @@
-#include <math.h>
+#include "instructions.h"
 
 #include "cpu.h"
-#include "instructions.h"
 #include "log.h"
 #include "memory.h"
 
