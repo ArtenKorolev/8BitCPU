@@ -13,5 +13,5 @@ typedef enum {
   ABSOLUTE_Y,
   INDIRECT,
   INDIRECT_X,
-  INDERECT_Y,
+  INDIRECT_Y,
 } addressing_mode_e;

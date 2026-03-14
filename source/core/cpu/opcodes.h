@@ -70,9 +70,10 @@ typedef enum {
   BVC_OPCOD = 0x50,  // Branch if overflow clear
   BVS_OPCOD = 0x70,  // Branch if overflow set
 
-  CMPI_OPCOD = 0xC9,  // Compare accumulator with immediate
-  CMPZ_OPCOD = 0xC5,  // Compare accumulator with zero page
-  CMPA_OPCOD = 0xCD,  // Compare accumulator with absolute
+  CMPI_OPCOD = 0xC9,   // Compare accumulator with immediate
+  CMPZ_OPCOD = 0xC5,   // Compare accumulator with zero page
+  CMPZX_OPCOD = 0xD5,  // Compare accumulator with zero page
+  CMPA_OPCOD = 0xCD,   // Compare accumulator with absolute
   CMPAY_OPCOD = 0xD9,
   CMPAX_OPCOD = 0xDD,
   CMPIX_OPCOD = 0xC1,
@@ -166,4 +167,25 @@ typedef enum {
   SLOAY_OPCOD = 0x1B,
   SLOIX_OPCOD = 0x03,
   SLOIY_OPCOD = 0x13,
+
+  SUBI_OPCOD = 0xE9,
+  SUBZ_OPCOD = 0xE5,
+  SUBZX_OPCOD = 0xF5,
+  SUBA_OPCOD = 0xED,
+  SUBAX_OPCOD = 0xFD,
+  SUBAY_OPCOD = 0xF9,
+  SUBIX_OPCOD = 0xE1,
+  SUBIY_OPCOD = 0xF1,
+
+  ROLAC_OPCOD = 0x2A,
+  ROLZ_OPCOD = 0x26,
+  ROLZX_OPCOD = 0x36,
+  ROLA_OPCOD = 0x2E,
+  ROLAX_OPCOD = 0x3E,
+
+  RORAC_OPCOD = 0x6A,
+  RORZ_OPCOD = 0x66,
+  RORZX_OPCOD = 0x76,
+  RORA_OPCOD = 0x6E,
+  RORAX_OPCOD = 0x7E,
 } opcode_e;

@@ -4,8 +4,6 @@
 #include "base.h"
 #include "opcodes.h"
 
-#define OPCODES_COUNT 256
-
 struct Cpu;
 typedef struct Cpu cpu_t;
 

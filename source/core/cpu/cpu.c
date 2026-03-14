@@ -13,7 +13,6 @@
 void cpu_reset_operands_buffer(cpu_t *self);
 word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
-byte_t cpu_fetch(cpu_t *self, const memory_t *memory, bool *success);
 void cpu_set_remaining_bytes(cpu_t *self);
 
 #define CARRY_MASK 0x1
@@ -63,36 +62,51 @@ word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory) {
   return address;
 }
 
-void cpu_reset_operands_buffer(cpu_t *self) {
+inline void cpu_reset_operands_buffer(cpu_t *self) {
   memset(self->operands_buffer, 0, OPERANDS_BUFFER_SIZE);
   self->operands_buffer_index = 0;
 }
 
 // status register utils
-bool cpu_status_flag_is_set(const cpu_t *self, const flag_e flag) {
+inline bool cpu_status_flag_is_set(const cpu_t *self, const flag_e flag) {
   return self->reg_P & get_mask_for_flag(flag);
 }
 
-void cpu_status_flag_set(cpu_t *self, const flag_e flag) {
+inline void cpu_status_flag_set(cpu_t *self, const flag_e flag) {
   self->reg_P |= get_mask_for_flag(flag);
 }
 
-void cpu_status_flag_clear(cpu_t *self, const flag_e flag) {
+inline void cpu_status_flag_clear(cpu_t *self, const flag_e flag) {
   self->reg_P &= ~get_mask_for_flag(flag);
 }
 
-void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value) {
-  if (new_reg_value == 0) {
+inline void cpu_update_carry_flag(cpu_t *self, const word_t value) {
+  if (value > 0xFF) {
+    cpu_status_flag_set(self, CARRY);
+  } else {
+    cpu_status_flag_clear(self, CARRY);
+  }
+}
+
+inline void cpu_update_zero_flag(cpu_t *self, const byte_t new_value) {
+  if (new_value == 0) {
     cpu_status_flag_set(self, ZERO);
   } else {
     cpu_status_flag_clear(self, ZERO);
   }
+}
 
-  if ((new_reg_value & NEGATIVE_MASK) != 0) {
+inline void cpu_update_negative_flag(cpu_t *self, const byte_t new_value) {
+  if (new_value & NEGATIVE_MASK) {
     cpu_status_flag_set(self, NEGATIVE);
   } else {
     cpu_status_flag_clear(self, NEGATIVE);
   }
+}
+
+inline void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value) {
+  cpu_update_zero_flag(self, new_reg_value);
+  cpu_update_negative_flag(self, new_reg_value);
 }
 
 word_t calculate_buggy_address_of_hi_part(word_t address);
@@ -108,6 +122,14 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, cons
   }
 
   switch (mode) {
+    case ACCUMULATOR:
+      if (return_value_is_address != NULL) {
+        *return_value_is_address = false;
+      }
+
+      value = self->reg_A;
+
+      break;
     case IMMEDIATE:
       value = self->operands_buffer[0];
 
@@ -120,6 +142,9 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, cons
       if (return_value_is_address != NULL) {
         *return_value_is_address = false;
       }
+
+      value = self->operands_buffer[0];
+      break;
     case ZERO_PAGE:
       value = self->operands_buffer[0];
       break;
@@ -141,16 +166,16 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, cons
       const word_t hi_part = calculate_buggy_address_of_hi_part(value);
       value = MAKE_WORD(memory_read(memory, hi_part, &suc), memory_read(memory, value, &suc));  // effective address
       break;
-    case INDERECT_Y:
+    case INDIRECT_Y:
       value = self->operands_buffer[0];
       value =
-          (MAKE_WORD(memory_read(memory, value, &suc), memory_read(memory, (value + 1) & 0xFF, &suc)) + self->reg_Y) &
+          (MAKE_WORD(memory_read(memory, (value + 1) & 0xFF, &suc), memory_read(memory, value, &suc)) + self->reg_Y) &
           0xFFFF;
       break;
     case INDIRECT_X:
       value = self->operands_buffer[0];
       value = (value + self->reg_X) & 0xFF;
-      value = MAKE_WORD(memory_read(memory, value, &suc), memory_read(memory, (value + 1) & 0xFF, &suc)) & 0xFFFF;
+      value = MAKE_WORD(memory_read(memory, (value + 1) & 0xFF, &suc), memory_read(memory, value, &suc)) & 0xFFFF;
       break;
     default:
       return 0;
@@ -159,16 +184,18 @@ word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, cons
   return value;
 }
 
-word_t calculate_buggy_address_of_hi_part(const word_t address) {
+inline word_t calculate_buggy_address_of_hi_part(const word_t address) {
   if ((address & 0xFF) != 0xFF) {
     return address + 1;
   }
 
-  return address & 0xFF00;
+  return address & 0xFF00;  // wrapping around the lower part of a byte
 }
 
 trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
+
+  emu_log(INFO, "Program counter: %x\n", self->reg_IP);
 
   switch (self->state) {
     case FETCH:
@@ -178,6 +205,7 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
       if (!success) {  // failed fetching opcode
         self->reg_IR = 0;
         self->last_trap = SEGMENTATION_FAULT;
+        self->state = FETCH;
         break;
       }
 
@@ -210,9 +238,6 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
       break;
     case EXECUTE:
       cpu_exec(self, memory);
-      self->state = WRITEBACK;
-      break;
-    case WRITEBACK:
       self->state = FETCH;
       cpu_reset_operands_buffer(self);
       self->remaining_bytes = 0;
@@ -232,6 +257,28 @@ void cpu_set_remaining_bytes(cpu_t *self) {
   }
 
   self->remaining_bytes = opcode_data->bytes_for_operands;
+}
+
+word_t cpu_real_operand(cpu_t *cpu, const memory_t *memory, const addressing_mode_e mode) {
+  bool suc = true;
+  bool is_address = true;
+
+  word_t value = cpu_resolve_first_operand(cpu, memory, mode, &is_address);
+
+  if (is_address) {
+    value = memory_read(memory, value, &suc);
+  }
+
+  if (!suc) {
+    cpu->last_trap = SEGMENTATION_FAULT;
+    return 0;
+  }
+
+  return value;
+}
+
+byte_t cpu_fetch(cpu_t *self, const memory_t *memory, bool *success) {
+  return memory_read(memory, self->reg_IP++, success);
 }
 
 void cpu_exec(cpu_t *self, memory_t *memory) {

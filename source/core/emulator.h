@@ -6,8 +6,8 @@
 
 typedef enum {
   APPLE2,
-  COMMONDORE64,  // not supported
-  NES,           // not supported
+  COMMODORE64,  // not supported
+  NES,          // not supported
 } machine_type_e;
 
 struct Emulator {
