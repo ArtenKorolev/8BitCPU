@@ -41,9 +41,14 @@ void emulator_read_file_into_memory(emulator_t *self, const char *file_name) {
 
   if (file_content.size == 0) {
     emu_log(ERROR, "Zero bytes of program are read\n");
+    emu_log(WARN, "Note that ROM file \"mem.bin\" should be 64 KB\n");
     self->valid = false;
     file_content_free(&file_content);
     return;
+  }
+
+  if (file_content.size != KB_64) {
+    emu_log(WARN, "Note that ROM file \"mem.bin\" should be 64 KB (got %d bytes)\n", file_content.size);
   }
 
   if (file_content.size > MEMORY_SIZE) {
