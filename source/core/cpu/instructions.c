@@ -13,10 +13,13 @@
 #include "stack.h"
 #include "transfer.h"
 
-void jump_instr(cpu_t *self, addressing_mode_e mode, const memory_t *memory);
+void jump_instr(const instr_context_t *context) {
+  emu_log(INFO, "Jump;\n");
 
-void jmp_instr(const instr_context_t *context) {
-  jump_instr(context->cpu, context->mode, context->memory);
+  const word_t address = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, NULL);
+  emu_log(INFO, "Jumping address: %x\n", address);
+
+  context->cpu->reg_IP = address;
 }
 
 void nop_instr(const instr_context_t *context) {
@@ -191,8 +194,8 @@ const opcode_data_t *get_opcode_data(const opcode_e opcode) {
       [PLP_OPCOD] = {0, pull_processor_status_instr, IMPLIED},
 
       /* ========== JUMP ========== */
-      [JMPA_OPCOD] = {2, jmp_instr, ABSOLUTE},
-      [JMPI_OPCOD] = {2, jmp_instr, INDIRECT},
+      [JMPA_OPCOD] = {2, jump_instr, ABSOLUTE},
+      [JMPI_OPCOD] = {2, jump_instr, INDIRECT},
       [JSR_OPCOD] = {2, jump_subroutine_instr, ABSOLUTE},
       [RTS_OPCOD] = {0, return_from_subroutine_instr, IMPLIED},
 
@@ -231,13 +234,4 @@ const opcode_data_t *get_opcode_data(const opcode_e opcode) {
   }
 
   return &opcodes_data_table[opcode];
-}
-
-void jump_instr(cpu_t *self, const addressing_mode_e mode, const memory_t *memory) {
-  emu_log(INFO, "Jump;\n");
-
-  const word_t address = cpu_resolve_first_operand(self, memory, mode, NULL);
-  emu_log(INFO, "Jumping address: %x\n", address);
-
-  self->reg_IP = address;
 }

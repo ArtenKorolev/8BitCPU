@@ -62,8 +62,6 @@ int emulator_run(emulator_t *self) {
 
   emu_log(INFO, "Emulation started;\n");
 
-  size_t cycles = 0;
-
   while (self->valid) {
     const trap_e cycle_result = cpu_do_cycle(&self->cpu, &self->memory);
 
@@ -73,17 +71,12 @@ int emulator_run(emulator_t *self) {
       break;
     }
 
-    // for (int i = 0; i < 100000000; ++i);
-
-    if (++cycles == 1000) {
-      self->machine_interface.render(&self->memory);
-      cycles = 0;
-    }
+    self->machine_interface.render(&self->memory);
   }
 
   emu_log(INFO, "Emulation ended;\n");
 
-  return (int)!self->valid;
+  return (self->valid ? 0 : 1);
 }
 
 void emulator_shutdown(emulator_t *self) {

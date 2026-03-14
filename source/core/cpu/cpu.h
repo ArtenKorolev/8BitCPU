@@ -1,9 +1,6 @@
 #pragma once
 
-#include <stdio.h>
-
 #include "addressing_mode.h"
-#include "base.h"
 #include "memory.h"
 #include "opcodes.h"
 
@@ -47,22 +44,21 @@ typedef enum Flag {
   NEGATIVE,
 } flag_e;
 
+#define EMPTY_STACK_PTR 0xFF
+
 void cpu_init(cpu_t *self, const memory_t *memory);
 trap_e cpu_do_cycle(cpu_t *self, memory_t *memory);
-void cpu_dump(const cpu_t *self, FILE *stream);
-
 byte_t cpu_fetch(cpu_t *self, const memory_t *memory, bool *success);
 
-word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, const addressing_mode_e mode,
+word_t cpu_resolve_first_operand(const cpu_t *self, const memory_t *memory, addressing_mode_e mode,
                                  bool *return_value_is_address);
-void cpu_update_zero_and_negative_flags(cpu_t *self, const byte_t new_reg_value);
+word_t cpu_real_operand(cpu_t *cpu, const memory_t *memory, addressing_mode_e mode);
+
+void cpu_update_zero_and_negative_flags(cpu_t *self, byte_t new_reg_value);
 void cpu_update_carry_flag(cpu_t *self, word_t value);
-void cpu_update_negative_flag(cpu_t *self, const byte_t new_value);
-void cpu_update_zero_flag(cpu_t *self, const byte_t new_value);
+void cpu_update_negative_flag(cpu_t *self, byte_t new_value);
+void cpu_update_zero_flag(cpu_t *self, byte_t new_value);
 
-word_t cpu_real_operand(cpu_t *cpu, const memory_t *memory, const addressing_mode_e mode);
-
-bool cpu_status_flag_is_set(const cpu_t *self, const flag_e flag);
-
+bool cpu_status_flag_is_set(const cpu_t *self, flag_e flag);
 void cpu_status_flag_set(cpu_t *self, flag_e flag);
 void cpu_status_flag_clear(cpu_t *self, flag_e flag);

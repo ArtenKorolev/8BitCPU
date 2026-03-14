@@ -1,8 +1,6 @@
-#include <string.h>
-
 #include "emulator.h"
 #include "log.h"
-#include "utils/args.h"
+#include "args.h"
 
 log_level_e g_log_level = NO_LOG;
 

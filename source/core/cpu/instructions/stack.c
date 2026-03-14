@@ -25,7 +25,6 @@ void pull_processor_status_instr(const instr_context_t *context) {
 
 #define STACK_LOWEST_ADDRESS 0x0100
 #define FULL_STACK_PTR 0
-#define EMPTY_STACK_PTR 0xFF
 
 inline void push_onto_stack_instr(cpu_t *self, memory_t *memory, const byte_t value) {
   emu_log(INFO, "Pushing onto the stack;\n");

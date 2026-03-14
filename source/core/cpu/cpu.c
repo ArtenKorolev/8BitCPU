@@ -34,7 +34,7 @@ byte_t get_mask_for_flag(const flag_e flag) {
 
 void cpu_init(cpu_t *self, const memory_t *memory) {
   self->reg_IP = cpu_read_reset_vector(self, memory);
-  self->reg_SP = 0xFF;
+  self->reg_SP = EMPTY_STACK_PTR;
   self->reg_A = self->reg_X = self->reg_Y = 0;
   self->reg_P = EMPTY_STATUS;
 

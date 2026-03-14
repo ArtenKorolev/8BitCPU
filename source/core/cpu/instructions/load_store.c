@@ -5,7 +5,7 @@
 #include "memory.h"
 
 void store_register_instr(const cpu_t *self, byte_t register_value, memory_t *memory, addressing_mode_e mode);
-void load_register_instr(cpu_t *self, byte_t *register_ptr, addressing_mode_e mode, const memory_t *memory);
+void load_register_instr(cpu_t *cpu, byte_t *register_ptr, addressing_mode_e mode, const memory_t *memory);
 
 void load_a_instr(const instr_context_t *context) {
   load_register_instr(context->cpu, &context->cpu->reg_A, context->mode, context->memory);
