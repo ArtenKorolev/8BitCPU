@@ -3,10 +3,15 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "base.h"
 #include "file_io.h"
 #include "loader.h"
 #include "log.h"
 #include "memory.h"
+
+inline int min(const int first, const int second) {
+  return (first < second ? first : second);
+}
 
 void emulator_read_file_into_memory(emulator_t *self, const char *file_name);
 
@@ -51,11 +56,7 @@ void emulator_read_file_into_memory(emulator_t *self, const char *file_name) {
     emu_log(WARN, "Note that ROM file \"mem.bin\" should be 64 KB (got %d bytes)\n", file_content.size);
   }
 
-  if (file_content.size > MEMORY_SIZE) {
-    memcpy(self->memory.memory, file_content.data, MEMORY_SIZE);
-  } else {
-    memcpy(self->memory.memory, file_content.data, file_content.size);
-  }
+  memcpy(self->memory.memory, file_content.data, min(MEMORY_SIZE, file_content.size));
 
   file_content_free(&file_content);
 }

@@ -9,8 +9,13 @@ void logical_shift_right_instr(const instr_context_t *context) {
 
   bool is_address = true;
 
-  word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
-  byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
+  const word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
+  const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
 
   if (value & 0x01) {
     cpu_status_flag_set(context->cpu, CARRY);
@@ -32,7 +37,12 @@ void arithmetic_shift_left(const instr_context_t *context) {
   emu_log(INFO, "Arithmetic shift left;\n");
   bool is_address = true;
 
-  word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
+  const word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
   byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
 
   if (value & 0x80) {
@@ -56,6 +66,11 @@ void rotate_left(const instr_context_t *context) {
   bool is_address = true;
 
   const word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
   const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
 
   const bool saved_carry = cpu_status_flag_is_set(context->cpu, CARRY);
@@ -82,6 +97,11 @@ void rotate_right(const instr_context_t *context) {
   bool is_address = true;
 
   const word_t first_operand = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, &is_address);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
   const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
 
   const bool saved_carry = cpu_status_flag_is_set(context->cpu, CARRY);

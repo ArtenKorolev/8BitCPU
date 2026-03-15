@@ -42,6 +42,10 @@ inline void branch_on_flag_instr(cpu_t *self, const byte_t flag, const bool bran
 
   const byte_t offset = cpu_resolve_first_operand(self, NULL, RELATIVE, NULL);
 
+  if (self->last_trap != OK) {
+    return;
+  }
+
   const bool flag_is_set = cpu_status_flag_is_set(self, flag);
 
   if ((branch_if_set && flag_is_set) || (!branch_if_set && !flag_is_set)) {

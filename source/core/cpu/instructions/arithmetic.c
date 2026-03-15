@@ -9,6 +9,10 @@ void add_to_accumulator_instr(const instr_context_t *context) {
 
   const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
 
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
   const byte_t carry = cpu_status_flag_is_set(context->cpu, CARRY) ? 1 : 0;
   const word_t result = value + context->cpu->reg_A + carry;
 
@@ -26,6 +30,10 @@ void add_to_accumulator_instr(const instr_context_t *context) {
 
 void sub_from_accumulator_instr(const instr_context_t *context) {
   const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
 
   const byte_t borrow = cpu_status_flag_is_set(context->cpu, CARRY) ? 0 : 1;
   const word_t result = (word_t)context->cpu->reg_A - (byte_t)value - borrow;
@@ -60,6 +68,11 @@ void inc_memory_instr(const instr_context_t *context) {
 
 inline void change_by_one(const instr_context_t *context, const byte_t value_to_add) {
   const word_t address = cpu_resolve_first_operand(context->cpu, context->memory, context->mode, NULL);
+
+  if (context->cpu->last_trap != OK) {
+    return;
+  }
+
   const byte_t value = cpu_real_operand(context->cpu, context->memory, context->mode) + value_to_add;
   cpu_update_zero_and_negative_flags(context->cpu, value);
   memory_write(context->memory, address, value);

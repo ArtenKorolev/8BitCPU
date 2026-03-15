@@ -22,6 +22,10 @@ void compare_instr(cpu_t *cpu, const memory_t *memory, const byte_t register_val
 
   const byte_t value = cpu_real_operand(cpu, memory, mode);
 
+  if (cpu->last_trap != OK) {
+    return;
+  }
+
   const byte_t result = (byte_t)(register_value - (byte_t)value);
   cpu_update_zero_and_negative_flags(cpu, result);
 
