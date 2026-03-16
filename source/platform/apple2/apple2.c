@@ -141,8 +141,11 @@ void apple2_render(const memory_t *memory) {
   apple2_terminal_should_render = false;
 }
 
+#define ROWS_COUNT 40
+#define COLS_COUNT 24
+
 void render(const memory_t *memory, const page_e page) {
-  bool suc;
+  bool suc = true;
 
   printf("\x1B[2J\x1B[1;1H");
 
@@ -151,7 +154,7 @@ void render(const memory_t *memory, const page_e page) {
 
   puts("\nAPPLE II terminal\n");
 
-  for (int i = 0; i < 40; ++i) {
+  for (int i = 0; i < ROWS_COUNT; ++i) {
     putchar('=');
   }
 
@@ -159,10 +162,10 @@ void render(const memory_t *memory, const page_e page) {
 
   const word_t base = (page == PRIM) ? TEXT_START_PRIM : TEXT_START_SEC;
 
-  for (int row = 0; row < 24; row++) {
+  for (int row = 0; row < COLS_COUNT; row++) {
     const word_t row_addr = calculate_row_address(base, row);
 
-    for (int col = 0; col < 40; col++) {
+    for (int col = 0; col < ROWS_COUNT; col++) {
       byte_t symbol = memory_read(memory, row_addr + col, &suc);
 
       if (symbol == 0xEA) {

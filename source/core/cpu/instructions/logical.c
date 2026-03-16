@@ -11,7 +11,6 @@ void exclusive_or_instr(const instr_context_t *context) {
     return;
   }
 
-  context->cpu->reg_A &= value;
   context->cpu->reg_A ^= value;
   cpu_update_zero_and_negative_flags(context->cpu, context->cpu->reg_A);
 }
