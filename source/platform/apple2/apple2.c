@@ -15,16 +15,26 @@
 #define IO_START 0xC000
 #define IO_END 0xC0FF
 
+#define ROM_START 0xD000
+
 #define KEYBOARD_DATA 0xC000
 #define KEYBOARD_STROBE 0xC010
 #define SPEAKER_TOGGLE 0xC030
 
-#define ROM_START 0xD000
+#define SET_GRAPHICS 0xC050
+#define SET_TEXT 0xC051
+#define SET_PRIM 0xC054
+#define SET_SEC 0xC055
+#define SET_LO 0xC056
+#define SET_HI 0xC057
 
 #define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
 
 static byte_t keyboard_latch = 0;
 static bool keyboard_ready = false;
+
+#define KEYBOARD_READY_MASK 0x80
+#define DISCARD_BIT7 0x7F
 
 typedef enum { TEXT, GRAPHICS } video_mode_e;
 typedef enum { HI, LO } res_e;
@@ -48,49 +58,49 @@ byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *succ
   *success = true;
 
   switch (address) {
-    case 0xC050:
-      emu_log(INFO, "Set graphics; ");
+    case SET_GRAPHICS:
+      emu_log(INFO, "Set graphics;\n");
       g_video_mode = GRAPHICS;
       return 0;
-    case 0xC051:
-      emu_log(INFO, "Set text; ");
+    case SET_TEXT:
+      emu_log(INFO, "Set text;\n");
       g_video_mode = TEXT;
       return 0;
-    case 0xC054:
-      emu_log(INFO, "Set primary page; ");
+    case SET_PRIM:
+      emu_log(INFO, "Set primary page;\n");
       g_page = PRIM;
       return 0;
-    case 0xC055:
-      emu_log(INFO, "Set secondary page; ");
+    case SET_SEC:
+      emu_log(INFO, "Set secondary page;\n");
       g_page = SEC;
       return 0;
-    case 0xC056:
-      emu_log(INFO, "Set lo mode; ");
+    case SET_LO:
+      emu_log(INFO, "Set lo mode;\n");
       g_res = LO;
       return 0;
-    case 0xC057:
-      emu_log(INFO, "Set hi mode; ");
+    case SET_HI:
+      emu_log(INFO, "Set hi mode;\n");
       g_res = HI;
       return 0;
     case KEYBOARD_DATA:
-      emu_log(INFO, "Reading keyboard; ");
+      emu_log(INFO, "Reading keyboard;\n");
 
       if (!keyboard_ready) {
-        int c = getchar();
+        int input_chr = getchar();
 
-        c = (c == 0xA ? '\r' : c);
+        input_chr = (input_chr == '\n' ? '\r' : input_chr);
 
-        keyboard_latch = (byte_t)c | 0x80;
+        keyboard_latch = (byte_t)input_chr | KEYBOARD_READY_MASK;
         keyboard_ready = true;
       }
 
       return keyboard_latch;
     case KEYBOARD_STROBE:
-      emu_log(INFO, "Keyboard strobe; ");
+      emu_log(INFO, "Keyboard strobe;\n");
       keyboard_ready = false;
       return 0;
     case SPEAKER_TOGGLE:
-      emu_log(INFO, "Speaker toggle; ");
+      emu_log(INFO, "Speaker toggle;\n");
       return 0;
     default:
       break;
@@ -141,8 +151,8 @@ void apple2_render(const memory_t *memory) {
   apple2_terminal_should_render = false;
 }
 
-#define ROWS_COUNT 40
-#define COLS_COUNT 24
+#define COLS_COUNT 40
+#define ROWS_COUNT 24
 
 void render(const memory_t *memory, const page_e page) {
   bool suc = true;
@@ -154,7 +164,7 @@ void render(const memory_t *memory, const page_e page) {
 
   puts("\nAPPLE II terminal\n");
 
-  for (int i = 0; i < ROWS_COUNT; ++i) {
+  for (int i = 0; i < COLS_COUNT; ++i) {
     putchar('=');
   }
 
@@ -162,16 +172,16 @@ void render(const memory_t *memory, const page_e page) {
 
   const word_t base = (page == PRIM) ? TEXT_START_PRIM : TEXT_START_SEC;
 
-  for (int row = 0; row < COLS_COUNT; row++) {
+  for (int row = 0; row < ROWS_COUNT; row++) {
     const word_t row_addr = calculate_row_address(base, row);
 
-    for (int col = 0; col < ROWS_COUNT; col++) {
+    for (int col = 0; col < COLS_COUNT; col++) {
       byte_t symbol = memory_read(memory, row_addr + col, &suc);
 
-      if (symbol == 0xEA) {
+      if (symbol == '\n') {
         symbol = '?';
       } else {
-        symbol &= 0x7F;
+        symbol &= DISCARD_BIT7;
 
         if (symbol < 0x20) {
           symbol += 0x40;
@@ -188,7 +198,7 @@ void render(const memory_t *memory, const page_e page) {
     puts("|");
   }
 
-  for (int i = 0; i < 40; ++i) {
+  for (int i = 0; i < COLS_COUNT; ++i) {
     putchar('=');
   }
 
