@@ -7,8 +7,8 @@
 
 struct Memory;
 
-typedef byte_t (*read_func_ptr_t)(const struct Memory *, const word_t, bool *);
-typedef void (*write_func_ptr_t)(struct Memory *, const word_t, const byte_t);
+typedef byte_t (*read_func_ptr_t)(const struct Memory *, const word_t, bool *, void *computer_data);
+typedef void (*write_func_ptr_t)(struct Memory *, const word_t, const byte_t, void *computer_data);
 
 struct Memory {
   byte_t *memory;
@@ -16,6 +16,8 @@ struct Memory {
 
   read_func_ptr_t read;
   write_func_ptr_t write;
+
+  void *computer_data;
 };
 
 typedef struct Memory memory_t;

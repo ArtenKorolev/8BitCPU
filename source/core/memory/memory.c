@@ -22,7 +22,7 @@ void memory_write(memory_t *self, const word_t address, const byte_t value) {
     return;
   }
 
-  self->write(self, address, value);
+  self->write(self, address, value, self->computer_data);
 }
 
 byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
@@ -30,13 +30,11 @@ byte_t memory_read(const memory_t *self, const word_t address, bool *success) {
     return 0;
   }
 
-  return self->read(self, address, success);
+  return self->read(self, address, success, self->computer_data);
 }
 
-#define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
-
 void memory_free(memory_t *self) {
-  if (IS_INVALID_MEMORY(self)) {
+  if (self == NULL || self->memory_size == 0 || self->memory == 0) {
     return;
   }
 

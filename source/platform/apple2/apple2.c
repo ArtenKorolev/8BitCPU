@@ -40,87 +40,63 @@ enum {
   SET_HI = 0xC057
 };
 
-#define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
-
-static byte_t keyboard_latch = 0;
-static bool keyboard_ready = false;
-
 #define KEYBOARD_READY_MASK 0x80
-#define DISCARD_BIT7 0x7F
-
-typedef enum {
-  TEXT,
-  GRAPHICS
-} video_mode_e;
-
-typedef enum {
-  HI,
-  LO
-} res_e;
-
-typedef enum {
-  PRIM,
-  SEC
-} page_e;
-
-static video_mode_e g_video_mode = TEXT;
-static page_e g_page = SEC;
-static res_e g_res = LO;
-
-bool apple2_terminal_should_render = true;
+#define DISCARD_BIT7_MASK 0x7F
 
 word_t calculate_row_address(word_t base_address, byte_t row_counter);
 void render(const memory_t *memory, page_e page);
 
-byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *success) {
-  if (IS_INVALID_MEMORY(self) || address >= self->memory_size) {
+byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *success, void *data) {
+  if (self == NULL || self->memory_size == 0 || self->memory == NULL || address >= self->memory_size) {
     *success = false;
     return 0;
   }
 
   *success = true;
 
+  apple2_data_t *ap_data = (apple2_data_t *)data;
+
   switch (address) {
     case SET_GRAPHICS:
       emu_log(INFO, "Set graphics;\n");
-      g_video_mode = GRAPHICS;
+      ap_data->video_mode = GRAPHICS;
       return 0;
     case SET_TEXT:
       emu_log(INFO, "Set text;\n");
-      g_video_mode = TEXT;
+      ap_data->video_mode = TEXT;
       return 0;
     case SET_PRIM:
       emu_log(INFO, "Set primary page;\n");
-      g_page = PRIM;
+      ap_data->page = PRIM;
       return 0;
     case SET_SEC:
       emu_log(INFO, "Set secondary page;\n");
-      g_page = SEC;
+      ap_data->page = SEC;
       return 0;
     case SET_LO:
       emu_log(INFO, "Set lo mode;\n");
-      g_res = LO;
+      ap_data->res = LO;
       return 0;
     case SET_HI:
       emu_log(INFO, "Set hi mode;\n");
-      g_res = HI;
+      ap_data->res = HI;
       return 0;
     case KEYBOARD_DATA:
       emu_log(INFO, "Reading keyboard;\n");
 
-      if (!keyboard_ready) {
+      if (!ap_data->keyboard_ready) {
         int input_chr = getchar();
 
         input_chr = (input_chr == '\n' ? '\r' : input_chr);
 
-        keyboard_latch = (byte_t)input_chr | KEYBOARD_READY_MASK;
-        keyboard_ready = true;
+        ap_data->keyboard_latch = (byte_t)input_chr | KEYBOARD_READY_MASK;
+        ap_data->keyboard_ready = true;
       }
 
-      return keyboard_latch;
+      return ap_data->keyboard_latch;
     case KEYBOARD_STROBE:
       emu_log(INFO, "Keyboard strobe;\n");
-      keyboard_ready = false;
+      ap_data->keyboard_ready = false;
       return 0;
     case SPEAKER_TOGGLE:
       emu_log(INFO, "Speaker toggle;\n");
@@ -141,14 +117,16 @@ byte_t apple2_memory_read(const memory_t *self, const word_t address, bool *succ
   return 0;
 }
 
-void apple2_memory_write(memory_t *self, const word_t address, const byte_t value) {
-  if (IS_INVALID_MEMORY(self) || address >= self->memory_size) {
+void apple2_memory_write(memory_t *self, const word_t address, const byte_t value, void *data) {
+  if (self == NULL || self->memory_size == 0 || self->memory == NULL || address >= self->memory_size) {
     return;
   }
 
+  apple2_data_t *ap_data = (apple2_data_t *)data;
+
   if ((address >= TEXT_START_PRIM && address <= TEXT_END_PRIM) ||
       (address >= TEXT_START_SEC && address <= TEXT_END_SEC)) {
-    apple2_terminal_should_render = true;
+    ap_data->term_render_request = true;
   }
 
   if (address >= ROM_START) {
@@ -164,18 +142,22 @@ void apple2_memory_write(memory_t *self, const word_t address, const byte_t valu
   emu_log(WARN, "Unhandled I/O write %04X value %02X\n", address, value);
 }
 
-void apple2_render(const memory_t *memory) {
-  if (!apple2_terminal_should_render) {
+void apple2_render(const memory_t *memory, void *data) {
+  apple2_data_t *ap_data = (apple2_data_t *)data;
+
+  if (!ap_data->term_render_request) {
     return;
   }
 
-  render(memory, g_page);
+  render(memory, ap_data->page);
 
-  apple2_terminal_should_render = false;
+  ap_data->term_render_request = false;
 }
 
-#define COLS_COUNT 40
-#define ROWS_COUNT 24
+enum {
+  COLS_COUNT = 40,
+  ROWS_COUNT = 24
+};
 
 void render(const memory_t *memory, const page_e page) {
   bool suc = true;
@@ -204,7 +186,7 @@ void render(const memory_t *memory, const page_e page) {
       if (symbol == '\n') {
         symbol = '?';
       } else {
-        symbol &= DISCARD_BIT7;
+        symbol &= DISCARD_BIT7_MASK;
 
         if (symbol < 0x20) {
           symbol += 0x40;

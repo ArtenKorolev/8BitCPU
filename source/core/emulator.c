@@ -28,6 +28,9 @@ void emulator_init(emulator_t *self, const machine_type_e type) {
   }
 
   memory_init(&self->memory, self->platform_interface.read, self->platform_interface.write);
+
+  load_computer_data(self);
+
   emulator_read_file_into_memory(self, "mem.bin");
 
   if (!self->valid) {
@@ -77,7 +80,7 @@ int emulator_run(emulator_t *self) {
       break;
     }
 
-    self->platform_interface.render(&self->memory);
+    self->platform_interface.render(&self->memory, self->memory.computer_data);
   }
 
   emu_log(INFO, "Emulation ended;\n");
