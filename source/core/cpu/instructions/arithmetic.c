@@ -16,12 +16,7 @@ void add_to_accumulator_instr(const instr_context_t *context) {
   const byte_t carry = cpu_status_flag_is_set(context->cpu, CARRY) ? 1 : 0;
   const word_t result = value + context->cpu->reg_A + carry;
 
-  if (((value & 0x80) == (context->cpu->reg_A & 0x80)) && ((result & 0x80) != (value & 0x80))) {
-    cpu_status_flag_set(context->cpu, OVERFLOW_);
-  } else {
-    cpu_status_flag_clear(context->cpu, OVERFLOW_);
-  }
-
+  cpu_update_overflow_flag_in_arithmetic(context->cpu, result, value);
   cpu_update_carry_flag(context->cpu, result);
 
   context->cpu->reg_A = (byte_t)result;
@@ -38,11 +33,7 @@ void sub_from_accumulator_instr(const instr_context_t *context) {
   const byte_t borrow = cpu_status_flag_is_set(context->cpu, CARRY) ? 0 : 1;
   const word_t result = (word_t)context->cpu->reg_A - (byte_t)value - borrow;
 
-  if (((value & 0x80) == (context->cpu->reg_A & 0x80)) && ((result & 0x80) != (value & 0x80))) {
-    cpu_status_flag_set(context->cpu, OVERFLOW_);
-  } else {
-    cpu_status_flag_clear(context->cpu, OVERFLOW_);
-  }
+  cpu_update_overflow_flag_in_arithmetic(context->cpu, result, value);
 
   if (result < 0x100) {
     cpu_status_flag_set(context->cpu, CARRY);

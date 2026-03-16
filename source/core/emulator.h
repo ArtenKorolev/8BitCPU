@@ -16,7 +16,7 @@ struct Emulator {
 
   bool valid;
   machine_type_e type;
-  platform_interface_t machine_interface;
+  platform_interface_t platform_interface;
 };
 
 void emulator_init(emulator_t *self, machine_type_e type);

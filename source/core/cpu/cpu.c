@@ -80,6 +80,14 @@ inline void cpu_status_flag_clear(cpu_t *self, const flag_e flag) {
   self->reg_P &= ~get_mask_for_flag(flag);
 }
 
+inline void cpu_update_overflow_flag_in_arithmetic(cpu_t *self, const byte_t result, const byte_t value) {
+  if (((value & 0x80) == (self->reg_A & 0x80)) && ((result & 0x80) != (value & 0x80))) {
+    cpu_status_flag_set(self, OVERFLOW_);
+  } else {
+    cpu_status_flag_clear(self, OVERFLOW_);
+  }
+}
+
 inline void cpu_update_carry_flag(cpu_t *self, const word_t value) {
   if (value > 0xFF) {
     cpu_status_flag_set(self, CARRY);

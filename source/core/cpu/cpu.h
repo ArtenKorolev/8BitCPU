@@ -58,6 +58,7 @@ void cpu_update_zero_and_negative_flags(cpu_t *self, byte_t new_reg_value);
 void cpu_update_carry_flag(cpu_t *self, word_t value);
 void cpu_update_negative_flag(cpu_t *self, byte_t new_value);
 void cpu_update_zero_flag(cpu_t *self, byte_t new_value);
+void cpu_update_overflow_flag_in_arithmetic(cpu_t *self, byte_t result, byte_t value);
 
 bool cpu_status_flag_is_set(const cpu_t *self, flag_e flag);
 void cpu_status_flag_set(cpu_t *self, flag_e flag);

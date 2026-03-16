@@ -20,14 +20,14 @@ void emulator_init(emulator_t *self, const machine_type_e type) {
   self->valid = false;
   self->type = type;
 
-  load_machine_interface(self);
+  load_platform_interface(self);
 
   if (!self->valid) {
     emu_log(ERROR, "Emulator initialization failed;\n");
     return;
   }
 
-  memory_init(&self->memory, self->machine_interface.read, self->machine_interface.write);
+  memory_init(&self->memory, self->platform_interface.read, self->platform_interface.write);
   emulator_read_file_into_memory(self, "mem.bin");
 
   if (!self->valid) {
@@ -77,7 +77,7 @@ int emulator_run(emulator_t *self) {
       break;
     }
 
-    self->machine_interface.render(&self->memory);
+    self->platform_interface.render(&self->memory);
   }
 
   emu_log(INFO, "Emulation ended;\n");
