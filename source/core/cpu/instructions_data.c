@@ -1,10 +1,9 @@
-#include "instructions.h"
-
 #include "arithmetic.h"
 #include "branch.h"
 #include "compare.h"
 #include "cpu.h"
 #include "flags.h"
+#include "instructions_data.h"
 #include "load_store.h"
 #include "log.h"
 #include "logical.h"

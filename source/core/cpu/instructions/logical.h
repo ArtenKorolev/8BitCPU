@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void or_with_accumulator_instr(const instr_context_t *context);
 void exclusive_or_instr(const instr_context_t *context);

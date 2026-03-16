@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void add_to_accumulator_instr(const instr_context_t *context);
 void sub_from_accumulator_instr(const instr_context_t *context);

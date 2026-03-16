@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void cmp_instr(const instr_context_t *context);
 void cpx_instr(const instr_context_t *context);

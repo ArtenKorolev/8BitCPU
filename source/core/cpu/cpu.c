@@ -5,7 +5,7 @@
 
 #include "addressing_mode.h"
 #include "base.h"
-#include "instructions.h"
+#include "instructions_data.h"
 #include "log.h"
 #include "memory.h"
 

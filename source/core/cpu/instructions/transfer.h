@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void transfer_a_to_x_instr(const instr_context_t *context);
 void transfer_a_to_y_instr(const instr_context_t *context);

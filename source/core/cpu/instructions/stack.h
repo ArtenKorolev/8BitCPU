@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void jump_subroutine_instr(const instr_context_t *context);
 void return_from_subroutine_instr(const instr_context_t *context);

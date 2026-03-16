@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void bcc_instr(const instr_context_t *context);
 void bcs_instr(const instr_context_t *context);

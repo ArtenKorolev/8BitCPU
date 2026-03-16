@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void load_a_instr(const instr_context_t *context);
 void load_x_instr(const instr_context_t *context);

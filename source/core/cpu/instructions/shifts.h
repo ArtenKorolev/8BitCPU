@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instructions.h"
+#include "instructions_data.h"
 
 void logical_shift_right_instr(const instr_context_t *context);
 void arithmetic_shift_left(const instr_context_t *context);

@@ -1,7 +1,7 @@
 #include "arithmetic.h"
 
 #include "cpu.h"
-#include "instructions.h"
+#include "instructions_data.h"
 #include "log.h"
 
 void add_to_accumulator_instr(const instr_context_t *context) {

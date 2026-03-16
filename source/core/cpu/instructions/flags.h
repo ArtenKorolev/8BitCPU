@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cpu.h"
-#include "instructions.h"
+#include "instructions_data.h"
 
 static inline void clc_instr(const instr_context_t *context) {
   cpu_status_flag_clear(context->cpu, CARRY);
