@@ -6,27 +6,39 @@
 
 #include "log.h"
 
-#define TEXT_START_PRIM 0x0400
-#define TEXT_END_PRIM 0x07FF
+enum {
+  TEXT_START_PRIM = 0x0400,
+  TEXT_END_PRIM = 0x07FF
+};
 
-#define TEXT_START_SEC 0x0800
-#define TEXT_END_SEC 0x0BFF
+enum {
+  TEXT_START_SEC = 0x0800,
+  TEXT_END_SEC = 0x0BFF
+};
 
-#define IO_START 0xC000
-#define IO_END 0xC0FF
+enum {
+  IO_START = 0xC000,
+  IO_END = 0xC0FF
+};
 
-#define ROM_START 0xD000
+enum {
+  ROM_START = 0xD000
+};
 
-#define KEYBOARD_DATA 0xC000
-#define KEYBOARD_STROBE 0xC010
-#define SPEAKER_TOGGLE 0xC030
+enum {
+  KEYBOARD_DATA = 0xC000,
+  KEYBOARD_STROBE = 0xC010,
+  SPEAKER_TOGGLE = 0xC030
+};
 
-#define SET_GRAPHICS 0xC050
-#define SET_TEXT 0xC051
-#define SET_PRIM 0xC054
-#define SET_SEC 0xC055
-#define SET_LO 0xC056
-#define SET_HI 0xC057
+enum {
+  SET_GRAPHICS = 0xC050,
+  SET_TEXT = 0xC051,
+  SET_PRIM = 0xC054,
+  SET_SEC = 0xC055,
+  SET_LO = 0xC056,
+  SET_HI = 0xC057
+};
 
 #define IS_INVALID_MEMORY(self) (self->memory == NULL || self->memory_size == 0)
 
@@ -36,9 +48,20 @@ static bool keyboard_ready = false;
 #define KEYBOARD_READY_MASK 0x80
 #define DISCARD_BIT7 0x7F
 
-typedef enum { TEXT, GRAPHICS } video_mode_e;
-typedef enum { HI, LO } res_e;
-typedef enum { PRIM, SEC } page_e;
+typedef enum {
+  TEXT,
+  GRAPHICS
+} video_mode_e;
+
+typedef enum {
+  HI,
+  LO
+} res_e;
+
+typedef enum {
+  PRIM,
+  SEC
+} page_e;
 
 static video_mode_e g_video_mode = TEXT;
 static page_e g_page = SEC;

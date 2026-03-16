@@ -15,14 +15,16 @@ word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory);
 void cpu_exec(cpu_t *self, memory_t *memory);
 void cpu_set_remaining_bytes(cpu_t *self);
 
-#define CARRY_MASK 0x1
-#define ZERO_MASK 0x2
-#define INTERRUPT_MASK 0x4
-#define DECIMAL_MASK 0x8
-#define BREAK_MASK 0x10
-#define OVERFLOW_MASK 0x40
-#define NEGATIVE_MASK 0x80
-#define EMPTY_STATUS 0x20
+enum {
+  CARRY_MASK = 0x1,
+  ZERO_MASK = 0x2,
+  INTERRUPT_MASK = 0x4,
+  DECIMAL_MASK = 0x8,
+  BREAK_MASK = 0x10,
+  OVERFLOW_MASK = 0x40,
+  NEGATIVE_MASK = 0x80,
+  EMPTY_STATUS = 0x20
+};
 
 byte_t get_mask_for_flag(const flag_e flag) {
   static byte_t masks[] = {
@@ -43,8 +45,10 @@ void cpu_init(cpu_t *self, const memory_t *memory) {
   self->last_trap = OK;
 }
 
-#define RESET_VECTOR_LOW 0xFFFC
-#define RESET_VECTOR_HIGH 0xFFFD
+enum {
+  RESET_VECTOR_LOW = 0xFFFC,
+  RESET_VECTOR_HIGH = 0xFFFD
+};
 
 word_t cpu_read_reset_vector(cpu_t *self, const memory_t *memory) {
   bool suc = true;

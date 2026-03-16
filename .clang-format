@@ -2,5 +2,9 @@ BasedOnStyle: Google
 IndentWidth: 2
 IndentPPDirectives: BeforeHash
 ColumnLimit: 120
-AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
+AllowShortEnumsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false

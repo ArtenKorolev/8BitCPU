@@ -1,9 +1,10 @@
+#include "instructions_data.h"
+
 #include "arithmetic.h"
 #include "branch.h"
 #include "compare.h"
 #include "cpu.h"
 #include "flags.h"
-#include "instructions_data.h"
 #include "load_store.h"
 #include "log.h"
 #include "logical.h"
@@ -25,7 +26,9 @@ void nop_instr(const instr_context_t *context) {
   emu_log(INFO, "No operation;\n");
 }
 
-#define OPCODES_COUNT 256
+enum {
+  OPCODES_COUNT = 256
+};
 
 const opcode_data_t *get_opcode_data(const opcode_e opcode) {
   if (opcode >= OPCODES_COUNT) {
