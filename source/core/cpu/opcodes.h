@@ -188,4 +188,7 @@ typedef enum {
   RORZX_OPCOD = 0x76,
   RORA_OPCOD = 0x6E,
   RORAX_OPCOD = 0x7E,
+
+  BRK_OPCOD = 0x00,
+  RTI_OPCOD = 0x40,
 } opcode_e;

@@ -3,9 +3,6 @@
 #include "cpu.h"
 #include "log.h"
 
-void push_onto_stack_instr(cpu_t *self, memory_t *memory, byte_t value);
-byte_t pull_from_stack_instr(cpu_t *self, const memory_t *memory);
-
 void push_a_instr(const instr_context_t *context) {
   push_onto_stack_instr(context->cpu, context->memory, context->cpu->reg_A);
 }
@@ -91,4 +88,16 @@ inline word_t fetch_return_address(cpu_t *cpu, memory_t *memory) {
   word_t return_address = pull_from_stack_instr(cpu, memory);
   return_address += (pull_from_stack_instr(cpu, memory) << 8);
   return return_address;
+}
+
+inline void push_word_onto_stack(cpu_t *cpu, memory_t *memory, const word_t word) {
+  push_onto_stack_instr(cpu, memory, word >> 8);
+  push_onto_stack_instr(cpu, memory, word & 0x0F);
+}
+
+inline word_t pull_word_from_stack(cpu_t *cpu, memory_t *memory) {
+  word_t word = 0;
+  word = pull_from_stack_instr(cpu, memory);
+  word |= (word_t)pull_from_stack_instr(cpu, memory) << 8;
+  return word;
 }

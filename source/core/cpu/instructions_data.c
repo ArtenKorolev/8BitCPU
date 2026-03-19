@@ -5,6 +5,7 @@
 #include "compare.h"
 #include "cpu.h"
 #include "flags.h"
+#include "interrupts.h"
 #include "load_store.h"
 #include "log.h"
 #include "logical.h"
@@ -227,6 +228,10 @@ const opcode_data_t *get_opcode_data(const opcode_e opcode) {
       [TYA_OPCOD] = {0, transfer_y_to_a_instr, IMPLIED},
       [TSX_OPCOD] = {0, transfer_sp_to_x_instr, IMPLIED},
       [TXS_OPCOD] = {0, transfer_x_to_sp_instr, IMPLIED},
+
+      /* ======== INTERRUPTS ======== */
+      [BRK_OPCOD] = {0, force_interrupt_instr, IMPLIED},
+      [RTI_OPCOD] = {0, return_from_interrupt, IMPLIED},
   };
 
   const opcode_data_t data = opcodes_data_table[opcode];
