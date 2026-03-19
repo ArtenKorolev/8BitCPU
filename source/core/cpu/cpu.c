@@ -207,8 +207,6 @@ inline word_t calculate_buggy_address_of_hi_part(const word_t address) {
 trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
   bool success = false;
 
-  emu_log(INFO, "Program counter: %x\n", self->reg_IP);
-
   switch (self->state) {
     case FETCH:
       self->reg_IR = cpu_fetch(self, memory, &success);
