@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "log.h"
+#include "opcodes.h"
 
 enum {
   TEXT_START_PRIM = 0x0400,
@@ -183,7 +184,7 @@ void render(const memory_t *memory, const page_e page) {
     for (int col = 0; col < COLS_COUNT; col++) {
       byte_t symbol = memory_read(memory, row_addr + col, &suc);
 
-      if (symbol == '\n') {
+      if (symbol == NOP_OPCOD) {
         symbol = '?';
       } else {
         symbol &= DISCARD_BIT7_MASK;
