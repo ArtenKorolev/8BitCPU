@@ -2,6 +2,7 @@
 
 #include "cpu.h"
 #include "memory.h"
+#include "options.h"
 #include "platform_interface.h"
 
 typedef enum {
@@ -19,6 +20,8 @@ struct Emulator {
   platform_interface_t platform_interface;
 };
 
-void emulator_init(emulator_t *self, machine_type_e type);
+typedef struct Emulator emulator_t;
+
+void emulator_init(emulator_t *self, machine_type_e type, const options_t *options);
 int emulator_run(emulator_t *self);
 void emulator_shutdown(emulator_t *self);

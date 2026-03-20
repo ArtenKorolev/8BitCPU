@@ -8,14 +8,15 @@
 #include "loader.h"
 #include "log.h"
 #include "memory.h"
+#include "options.h"
 
 inline int min(const int first, const int second) {
   return (first < second ? first : second);
 }
 
-void emulator_read_file_into_memory(emulator_t *self, const char *file_name);
+void emulator_read_rom_image_into_memory(emulator_t *self, const char *rom_file, word_t origin);
 
-void emulator_init(emulator_t *self, const machine_type_e type) {
+void emulator_init(emulator_t *self, const machine_type_e type, const options_t *options) {
   emu_log(INFO, "Start initializing emulator;\n");
   self->valid = false;
   self->type = type;
@@ -31,7 +32,7 @@ void emulator_init(emulator_t *self, const machine_type_e type) {
 
   load_computer_data(self);
 
-  emulator_read_file_into_memory(self, "mem.bin");
+  emulator_read_rom_image_into_memory(self, options->rom_file, options->origin);
 
   if (!self->valid) {
     emu_log(ERROR, "Emulator initialization failed;\n");
@@ -44,22 +45,34 @@ void emulator_init(emulator_t *self, const machine_type_e type) {
   emu_log(INFO, "Emulator initialized successfully;\n");
 }
 
-void emulator_read_file_into_memory(emulator_t *self, const char *file_name) {
-  file_content_t file_content = read_bin_file(file_name);
+void emulator_read_rom_image_into_memory(emulator_t *self, const char *rom_file, const word_t origin) {
+  if (rom_file == NULL) {
+    emu_log(ERROR, "ROM image was not provided; \n");
+    self->valid = false;
+    return;
+  }
+
+  file_content_t file_content = read_bin_file(rom_file);
+
+  emu_log(INFO, "ROM image: %s;\n", rom_file);
+  emu_log(INFO, "Origin: %d;\n", origin);
 
   if (file_content.size == 0) {
-    emu_log(ERROR, "Zero bytes of program are read\n");
-    emu_log(WARN, "Note that ROM file \"mem.bin\" should be 64 KB\n");
+    emu_log(ERROR, "Zero bytes of program are read;\n");
     self->valid = false;
     file_content_free(&file_content);
     return;
   }
 
-  if (file_content.size != KB_64) {
-    emu_log(WARN, "Note that ROM file \"mem.bin\" should be 64 KB (got %d bytes)\n", file_content.size);
+  emu_log(INFO, "ROM size: %d bytes;\n", file_content.size);
+
+  if (file_content.size + origin > KB_64) {
+    emu_log(ERROR, "ROM image cannot fit in 64 KB;\n");
+    self->valid = false;
+    return;
   }
 
-  memcpy(self->memory.memory, file_content.data, min(MEMORY_SIZE, file_content.size));
+  memcpy(self->memory.memory + origin, file_content.data, file_content.size);
 
   file_content_free(&file_content);
 }
