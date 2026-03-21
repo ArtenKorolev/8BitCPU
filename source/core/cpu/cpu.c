@@ -210,26 +210,21 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
   switch (self->state) {
     case FETCH:
       self->reg_IR = cpu_fetch(self, memory, &success);
-      emu_log(INFO, "Fetched opcode: %x\n", self->reg_IR);
 
       if (!success) {  // failed fetching opcode
         self->reg_IR = 0;
         self->last_trap = SEGMENTATION_FAULT;
-        self->state = FETCH;
         break;
       }
+
+      emu_log(INFO, "Fetched opcode: %x\n", self->reg_IR);
 
       self->state = DECODE;
 
       break;
     case FETCH_OPERAND:
-      if (self->remaining_bytes == 0) {
-        self->state = EXECUTE;
-        break;
-      }
-
       if (self->operands_buffer_index == OPERANDS_BUFFER_SIZE) {
-        self->last_trap = SEGMENTATION_FAULT;
+        self->last_trap = INTERNAL_BUF_OVERFLOW;
         break;
       }
 
@@ -240,11 +235,16 @@ trap_e cpu_do_cycle(cpu_t *self, memory_t *memory) {
         break;
       }
 
-      --self->remaining_bytes;
+      if (--(self->remaining_bytes) == 0) {
+        self->state = EXECUTE;
+      }
+
       break;
     case DECODE:
       cpu_set_remaining_bytes(self);
-      self->state = FETCH_OPERAND;
+
+      self->state = self->remaining_bytes == 0 ? EXECUTE : FETCH_OPERAND;
+
       break;
     case EXECUTE:
       cpu_exec(self, memory);
@@ -262,7 +262,7 @@ void cpu_set_remaining_bytes(cpu_t *self) {
 
   if (opcode_data == NULL) {
     self->last_trap = ILLEGAL_OPCODE;
-    emu_log(ERROR, "NULL\n");
+    emu_log(ERROR, "Illegal opcode;\n");
     return;
   }
 
@@ -296,7 +296,7 @@ void cpu_exec(cpu_t *self, memory_t *memory) {
 
   if (opcode_data == NULL) {
     self->last_trap = ILLEGAL_OPCODE;
-    emu_log(ERROR, "NULL\n");
+    emu_log(ERROR, "Illegal opcode;\n");
     return;
   }
 

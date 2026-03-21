@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "opcodes.h"
@@ -178,6 +179,8 @@ void render(const memory_t *memory, const page_e page) {
 
   const word_t base = (page == PRIM) ? TEXT_START_PRIM : TEXT_START_SEC;
 
+  static char screen[ROWS_COUNT * (COLS_COUNT + 2)] = {0};
+
   for (int row = 0; row < ROWS_COUNT; row++) {
     const word_t row_addr = calculate_row_address(base, row);
 
@@ -198,11 +201,14 @@ void render(const memory_t *memory, const page_e page) {
         }
       }
 
-      putchar(symbol);
+      screen[row * (COLS_COUNT + 2) + col] = symbol;
     }
 
-    puts("|");
+    screen[row * (COLS_COUNT + 2) + (COLS_COUNT)] = '|';
+    screen[row * (COLS_COUNT + 2) + (COLS_COUNT + 1)] = '\n';
   }
+
+  write(STDOUT_FILENO, screen, ROWS_COUNT * (COLS_COUNT + 2));
 
   for (int i = 0; i < COLS_COUNT; ++i) {
     putchar('=');

@@ -17,6 +17,7 @@ typedef enum {
   SEGMENTATION_FAULT,  // write/read errors
   STACK_OVERFLOW,
   STACK_UNDERFLOW,
+  INTERNAL_BUF_OVERFLOW,
 } trap_e;
 
 #define OPERANDS_BUFFER_SIZE 8
