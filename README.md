@@ -25,12 +25,21 @@ To install and build this project follow the steps:
 - **Run** the emulator: `./emu8`
 
 ## Command line arguments ⌨️
-You can choose log level by command line arguments:
-- **Info**: `-linfo`
-- **Warning**: `-lwarn`
-- **Error**: `-lerr`
-  
-The default is NO_LOG option
+You can specify:
+### Log level
+- **Info**: `-L info`
+- **Warning**: `-L warn`
+- **Error**: `-L err`
+
+Logs are disabled by default
+
+### ROM image file
+- `./emu8 program.rom`
+
+### Origin of the program (address of the first byte of your program)
+- `./emu8 program.rom -O D000`
+
+By default the origin is 0
 
 ## Examples 🔭
 ### Applesoft BASIC
