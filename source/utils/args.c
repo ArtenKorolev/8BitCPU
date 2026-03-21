@@ -1,5 +1,6 @@
 #include "args.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,8 +40,11 @@ void parse_origin(const int origin_index, const char **argv, options_t *options)
 
 options_t parse_args(const int argc, const char **argv) {
   options_t options = {0};
+  options.empty = true;
 
   for (int i = 1; i < argc; ++i) {
+    options.empty = false;
+
     if (*argv[i] == '-' && i == argc - 1) {
       options.error_msg = "Flag without value";
       break;
@@ -61,4 +65,11 @@ options_t parse_args(const int argc, const char **argv) {
   }
 
   return options;
+}
+
+inline void print_usage(void) {
+  puts("Usage: ./emu8 [options] <ROM file>");
+  puts("Options:");
+  puts("Log level: -L <info/warn/err>");
+  puts("Origin: -O <hex number>");
 }

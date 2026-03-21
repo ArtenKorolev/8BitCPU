@@ -164,16 +164,16 @@ enum {
 void render(const memory_t *memory, const page_e page) {
   bool suc = true;
 
-  printf("\x1B[2J\x1B[1;1H");
+  write(STDOUT_FILENO, "\x1B[H", 3);
 
   const log_level_e saved = g_log_level;
   g_log_level = NO_LOG;
 
-  puts("\nAPPLE II terminal\n");
+  write(STDOUT_FILENO, "\nAPPLE II terminal\n", 19);
 
-  for (int i = 0; i < COLS_COUNT; ++i) {
-    putchar('=');
-  }
+  const char *sep_line = "========================================";
+
+  write(STDOUT_FILENO, sep_line, COLS_COUNT);
 
   putchar('\n');
 
@@ -209,10 +209,7 @@ void render(const memory_t *memory, const page_e page) {
   }
 
   write(STDOUT_FILENO, screen, ROWS_COUNT * (COLS_COUNT + 2));
-
-  for (int i = 0; i < COLS_COUNT; ++i) {
-    putchar('=');
-  }
+  write(STDOUT_FILENO, sep_line, COLS_COUNT);
 
   putchar('\n');
 
