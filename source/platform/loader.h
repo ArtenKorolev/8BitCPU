@@ -9,8 +9,7 @@
 #include "platform_interface.h"
 
 inline static void load_platform_interface(emulator_t *self) {
-  platform_interface_t interface;
-  memset(&interface, 0, sizeof(interface));  // set all pointers to NULL
+  platform_interface_t interface = {0};
 
   switch (self->type) {
     case APPLE2:
@@ -49,6 +48,5 @@ inline static void load_computer_data(emulator_t *self) {
       emu_log(ERROR, "Unsupported platform type\n");
       self->valid = false;
       return;
-      break;
   }
 }
