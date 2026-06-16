@@ -47,7 +47,7 @@ inline void branch_on_flag_instr(cpu_t *self, const byte_t flag, const bool bran
   }
 
   const bool flag_is_set = cpu_status_flag_is_set(self, flag);
-  const bool should_branch = (branch_if_set == true) == (flag_is_set == true);
+  const bool should_branch = branch_if_set == flag_is_set;
 
   if (should_branch) {
     emu_log(INFO, "Condition is satisfied, jump;\n");
